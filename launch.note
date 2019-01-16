@@ -1,0 +1,15 @@
+# Required process
+roscore
+roslaunch turtlebot_bringup minimal.launch
+
+# SLAM demo
+roslaunch turtlebot_navigation gmapping_demo.launch
+# Viz launcher, requires gmapping to be running
+oslaunch turtlebot_rviz_launchers view_navigation.launch
+# Saves map, requires gmapping to be running
+rosrun map_server map_saver –f your_map_name
+
+# Teleoperation (keyboard control)
+roslaunch turtlebot_teleop keyboard_teleop.launch
+
+
