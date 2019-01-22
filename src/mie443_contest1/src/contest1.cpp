@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <cmath>
 
+#include <iostream>
+#include <chrono>
+
 using namespace std;
 
 /*
@@ -118,7 +121,12 @@ int main(int argc, char **argv)
 	double roll, pitch, yaw;
 	double x, y, z;
 
-	while(ros::ok()){
+	std::chrono::time_point<std::chrono::system_clock> start;
+	start = std::chrono::system_clock::now(); /* start timer */
+    uint64_t secondsElapsed = 0; // the timer just started, so we know it is less than 480, no need to check.
+
+	while(ros::ok() && secondsElapsed <= 480)
+    	{
 		
 		// The basePose wrt the map frame
 		geometry_msgs::StampedTransform map_basePose;
@@ -146,10 +154,14 @@ int main(int argc, char **argv)
 		//...................................
 
 		//fill with your code
+
   		vel.angular.z = angular;
   		vel.linear.x = linear;
 
   		vel_pub.publish(vel);
+
+        	// The last thing to do is to update the timer.
+		secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
 	}
 
 	return 0;
