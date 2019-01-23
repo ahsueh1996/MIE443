@@ -29,75 +29,68 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
 	//cout<<*msg<<endl;
 }
 
-class Event {
-public:
-	double duration;
-	double linear;
-	double angular;
 
-	void Event(double dur, double lin, double, ang)
-	{
-		this->duration = dur;
-		this->linear = lin;
-		this->angular = ang;
-	}
+class Event {
+	public:
+		double duration;
+		double linear;
+		double angular;
+
+		Event(double dur, double lin, double ang)
+		{
+			this->duration = dur;
+			this->linear = lin;
+			this->angular = ang;
+		}
 };
 
 
 class Scheduler {
-private:
-	vector<Event> queue;
-	Event curr_event;
-	ros::Timer timer;
-public:
-	void pushEvent(double dur, double lin, double ang)
-	{
-		Event e(dur,lin,ang);
-		this->queue.append(e);
-	}
-
-	void setNextEvent()
-	{
-		if (!this->queue.empty())
+	private:
+		vector<Event> queue;
+		Event default_event = Event(0,0,0);
+		Event curr_event = Event(0,0,0);
+		ros::Timer timer;
+		ros::NodeHandle* nh;
+	public:
+		Scheduler(ros::NodeHandle* nh_)
 		{
-			this->curr_event = this->queue.pop();
-			this->timer = nh.createTimer(ros::Duration(curr_event.duration), this->schedulerCallback);
+			this->nh = nh_;
 		}
-	}
 
-	void schedulerCallback(const ros::TimerEvent&)
-	{
-		this->setNextEvent();
-	}
+		void pushEvent(double dur, double lin, double ang)
+		{
+			Event e = Event(dur,lin,ang);
+			this->queue.insert(this->queue.begin(),e);
+		}
 
-	Event& getCurrEvent() {return *this->curr_event};
+		void setNextEvent()
+		{
+			if (!this->queue.empty())
+			{
+				this->curr_event = this->queue.back();
+				this->queue.pop_back();
+				this->timer = this->nh->createTimer(ros::Duration(this->curr_event.duration), &Scheduler::schedulerCallback, this);
+			}
+			else
+			{
+				this->curr_event = this->default_event;
+			}
+		}
+
+		void schedulerCallback(const ros::TimerEvent&)
+		{
+			cout<<this->curr_event.duration<<"\t"<<this->curr_event.linear<<"\t"<<this->curr_event.angular<<endl;		
+			this->setNextEvent();
+		}
+
+		Event getCurrEvent()
+		{
+			return this->curr_event;
+		}
 };
 
 
-/*
- * From https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
- * Converts a quaternion to (roll pitch yaw) doubles
- */
-void toEulerAngle(double q1, double q2, double q3, double q4,
-				  double& roll, double& pitch, double& yaw)
-{
-	// roll (x-axis rotation)
-	double sinr_cosp = +2.0 * (q4 * q1 + q2 * q3);
-	double cosr_cosp = +1.0 - 2.0 * (q1 * q1 + q2 * q2);
-	roll = atan2(sinr_cosp, cosr_cosp);
-
-	// pitch (y-axis rotation)
-	double sinp = +2.0 * (q4 * q2 - q3 * q1);
-	if (fabs(sinp) >= 1)
-		pitch = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
-	else
-		pitch = asin(sinp);
-
-	// yaw (z-axis rotation)
-	double siny_cosp = +2.0 * (q4 * q3 + q1 * q2);
-	double cosy_cosp = +1.0 - 2.0 * (q2 * q2 + q3 * q3);
-	yaw = atan2(siny_cosp, cosy_cosp);
-}
 
 int main(int argc, char **argv)
 {
@@ -117,9 +110,13 @@ int main(int argc, char **argv)
 	double angular = 0.0;
 	double linear = 0.0;
 	geometry_msgs::Twist vel;
-	double q1,q2,q3,q4;
-	double roll, pitch, yaw;
+	double yaw;
 	double x, y, z;
+	Scheduler scheduler(&nh);
+	scheduler.pushEvent(3,1,2);
+	scheduler.pushEvent(10,2,3);
+	scheduler.pushEvent(1,3,4);
+	scheduler.setNextEvent();
 
 	std::chrono::time_point<std::chrono::system_clock> start;
 	start = std::chrono::system_clock::now(); /* start timer */
@@ -129,24 +126,20 @@ int main(int argc, char **argv)
     	{
 		
 		// The basePose wrt the map frame
-		geometry_msgs::StampedTransform map_basePose;
+		tf::StampedTransform map_basePose;
 		try {
-		  listener.lookupTransform("map", "base_footprint", ros::Time(0), map_basePose);
+			ros::Time now = ros::Time(0);
+			listener.waitForTransform("map", "base_footprint", now, ros::Duration(3.0));
+		  	listener.lookupTransform("map", "base_footprint", now, map_basePose);
 		} catch(tf::TransformException &exception) {
-		  ROS_ERROR("%s", exception.what());
+		  	ROS_INFO("%s", exception.what());
 		}
 
-		x = map_basePose.tranform.translation.x;
-		y = map_basePose.tranform.translation.y;
-		z = map_basePose.tranform.translation.z;
-		q1 = map_basePose.tranform.rotation.x;
-		q2 = map_basePose.tranform.rotation.y;
-		q3 = map_basePose.tranform.rotation.z;
-		q4 = map_basePose.tranform.rotation.w;
+		x = map_basePose.getOrigin().x();
+		y = map_basePose.getOrigin().y();
+		yaw = tf::getYaw(map_basePose.getRotation());
 
-		toEulerAngle(q1,q2,q3,q4,*roll,*pitch,*yaw);
-
-		cout<<x<<"\t"<<y<<"\t"<<z<<"||"<<roll<<"\t"<<pitch<<"\t"<<yaw<<endl;
+		// cout<<x<<"\t"<<y<<"||"<<yaw<<endl;
 
 		ros::spinOnce();
 		//.....**E-STOP DO NOT TOUCH**.......
@@ -154,13 +147,14 @@ int main(int argc, char **argv)
 		//...................................
 
 		//fill with your code
+		// Event event = scheduler.getCurrEvent();
 
-  		vel.angular.z = angular;
-  		vel.linear.x = linear;
+  		vel.angular.z = angular;//event.angular;
+  		vel.linear.x = linear;//event.linear;
 
   		vel_pub.publish(vel);
 
-        	// The last thing to do is to update the timer.
+        // The last thing to do is to update the timer.
 		secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
 	}
 
