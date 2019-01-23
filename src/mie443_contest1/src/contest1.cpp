@@ -1,3 +1,9 @@
+/*
+ * MIE443 contest 1
+ * Authors: Richard, Albert, Scott, Simon, Mike
+ * Jan. 2019
+ */
+
 #include <ros/console.h>
 #include "ros/ros.h"
 #include <geometry_msgs/Twist.h>
@@ -14,27 +20,24 @@
 
 using namespace std;
 
-/*
- * The robot's drive ax := x
- * 				  up ax := z
- */
-
 void bumperCallback(const kobuki_msgs::BumperEvent::ConstPtr& msg){
-	//fill with your code
 	//cout<<*msg<<endl;
 }
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg){
-	//fill with your code
 	//cout<<*msg<<endl;
 }
 
 
 class Event {
+	/*
+	 * This class describes executable actions by the robot.
+	 * So far, actions have to do with how fast and for how long (zero-order-hold)
+	 */
 	public:
-		double duration;
-		double linear;
-		double angular;
+		double duration;		// [sec]
+		double linear;			// [m/s]    around the robot x axis
+		double angular;			// [rad/s]  about the robot z axis
 
 		Event(double dur, double lin, double ang)
 		{
@@ -46,6 +49,20 @@ class Event {
 
 
 class Scheduler {
+	/*
+	 * This class describes a time line of Events implemented by a queue.
+	 * Users push Events to the queue and when appropriate, the scheduler will
+	 * automatically executing the next Event. Given that each Event has a duration,
+	 * the automatic scheduling is done via a timer that sets off a callback to
+	 * set the robot's velocity according to the next event.
+	 *
+	 * Ex.
+	 * 		Q = <(spd 1 for 3s), (rot pi/6 for 3s), (spd -1 for 1s)>
+	 *  	Allowing the scheduler to complete this queue would result in the robot
+	 *  	driving forward 3 meters, rotating clockwise 90deg then backing up 1 meter
+	 *
+	 * If the queue is empty the default event is to do nothing.
+	 */
 	private:
 		vector<Event> queue;
 		Event default_event = Event(0,0,0);
@@ -58,12 +75,19 @@ class Scheduler {
 			this->nh = nh_;
 		}
 
+		/*
+		 * Push event creates a new event and enqueues it.
+		 */
 		void pushEvent(double dur, double lin, double ang)
 		{
 			Event e = Event(dur,lin,ang);
 			this->queue.insert(this->queue.begin(),e);
 		}
 
+		/*
+		 * Set next event can be called to manually move on to the next event in the queue.
+		 * It also sets the timer to call the next next event.
+		 */
 		void setNextEvent()
 		{
 			if (!this->queue.empty())
@@ -78,18 +102,23 @@ class Scheduler {
 			}
 		}
 
+		/*
+		 * This call back print out a debug message and moves uses set next event to execute the next event.
+		 */
 		void schedulerCallback(const ros::TimerEvent&)
 		{
 			cout<<this->curr_event.duration<<"\t"<<this->curr_event.linear<<"\t"<<this->curr_event.angular<<endl;		
 			this->setNextEvent();
 		}
 
+		/*
+		 * Use this function to get the event that should be executed.
+		 */
 		Event getCurrEvent()
 		{
 			return this->curr_event;
 		}
 };
-
 
 
 int main(int argc, char **argv)
@@ -112,6 +141,8 @@ int main(int argc, char **argv)
 	geometry_msgs::Twist vel;
 	double yaw;
 	double x, y, z;
+
+	// Here is an example of how to initialize the scheduler
 	Scheduler scheduler(&nh);
 	scheduler.pushEvent(3,1,2);
 	scheduler.pushEvent(10,2,3);
@@ -139,22 +170,20 @@ int main(int argc, char **argv)
 		y = map_basePose.getOrigin().y();
 		yaw = tf::getYaw(map_basePose.getRotation());
 
+		// This is a debug message to demonstrate the accessed pose information of the robot
 		// cout<<x<<"\t"<<y<<"||"<<yaw<<endl;
 
+		//.....**Resolve one publish and subscription cycle DO NOT TOUCH**.......
 		ros::spinOnce();
+
 		//.....**E-STOP DO NOT TOUCH**.......
 		eStop.block();
-		//...................................
 
-		//fill with your code
-		// Event event = scheduler.getCurrEvent();
-
-  		vel.angular.z = angular;//event.angular;
-  		vel.linear.x = linear;//event.linear;
-
+		//.....**Action routine DO NOT TOUCH (probably)**.......
+		Event event = scheduler.getCurrEvent();
+  		vel.angular.z = event.angular;
+  		vel.linear.x = event.linear;
   		vel_pub.publish(vel);
-
-        // The last thing to do is to update the timer.
 		secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
 	}
 
