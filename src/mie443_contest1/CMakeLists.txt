@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(mie443_contest1)
 
+add_compile_options(-std=c++11)
+
 #set(OpenCV_DIR "/usr/share/OpenCV")
 
 find_package(OpenCV 3 REQUIRED)
