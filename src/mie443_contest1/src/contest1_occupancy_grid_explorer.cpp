@@ -787,7 +787,7 @@ int main(int argc, char **argv)
 	double right_arm_timer = 0;
 
 	double overall_exploration_timer = 0;
-	double time_between_explorations = 1.5;
+	double time_between_explorations = 1;
 
 
 
