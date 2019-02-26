@@ -23,11 +23,31 @@ int main(int argc, char** argv) {
     }
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
+    float dist_b_g = 45.0; //cm
+
+    float x;
+    float y;
+    float phi;
+
+    Navigation  nav;
+
+    std::vector<std::vector<float>> goals;
+    for(int i = 0; i < boxes.coords.size(); ++i) {
+        x = boxes.coords[i][0];
+        y = boxes.coords[i][1];
+        phi = boxes.coords[i][2];
+
+        goals[i][0] = x + dist_b_g * cos(phi);
+        goals[i][1] = y - dist_b_g * sin(phi);
+        goals[i][2] =  90 + phi;
+    }
+
     // Execute strategy.
-    while(ros::ok()) {
+    while(ros::ok()){
         ros::spinOnce();
         /***YOUR CODE HERE***/
         // Use: boxes.coords
+        nav.moveToGoal(goals[0][0], goals[0][1], goals[0][2]);
         // Use: robotPose.x, robotPose.y, robotPose.phi
         imagePipeline.getTemplateID(boxes);
         ros::Duration(0.01).sleep();
