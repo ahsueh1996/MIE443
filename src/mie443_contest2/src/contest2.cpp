@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     }
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
-    float dist_b_g = 45.0; //cm
+    float dist_b_g = 0.45; //cm
 
     float x;
     float y;
@@ -31,7 +31,14 @@ int main(int argc, char** argv) {
 
     Navigation  nav;
 
+    std::cout << "initializing goals" << std::endl;
+
     std::vector<std::vector<float>> goals;
+    for(int i = 0; i < boxes.coords.size(); ++i) {
+        goals.push_back(std::vector<float>(3,0.0));
+    }
+
+    std::cout << "filling box coords" << std::endl;
     for(int i = 0; i < boxes.coords.size(); ++i) {
         x = boxes.coords[i][0];
         y = boxes.coords[i][1];
@@ -41,15 +48,17 @@ int main(int argc, char** argv) {
         goals[i][1] = y - dist_b_g * sin(phi);
         goals[i][2] =  90 + phi;
     }
+    std::cout << "ready to exec strat" << std::endl;
 
     // Execute strategy.
     while(ros::ok()){
         ros::spinOnce();
         /***YOUR CODE HERE***/
         // Use: boxes.coords
+        std::cout << goals[0][0] << ", " << goals[0][1] << ", "<< goals[0][2]<<std::endl;
         nav.moveToGoal(goals[0][0], goals[0][1], goals[0][2]);
         // Use: robotPose.x, robotPose.y, robotPose.phi
-        imagePipeline.getTemplateID(boxes);
+        //imagePipeline.getTemplateID(boxes);
         ros::Duration(0.01).sleep();
     }
     return 0;
