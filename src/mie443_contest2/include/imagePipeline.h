@@ -7,6 +7,10 @@
 #include <cv_bridge/cv_bridge.h>
 #include <boxes.h>
 
+using namespace cv;
+using namespace cv::xfeatures2d;
+
+
 class ImagePipeline {
     private:
         cv::Mat img;
