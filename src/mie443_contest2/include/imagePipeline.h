@@ -6,6 +6,7 @@
 #include <cv.h>
 #include <cv_bridge/cv_bridge.h>
 #include <boxes.h>
+#include <math.h>
 
 using namespace cv;
 using namespace cv::xfeatures2d;

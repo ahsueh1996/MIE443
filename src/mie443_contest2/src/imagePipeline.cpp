@@ -33,18 +33,24 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
         std::cout << "img.rows:" << img.rows << std::endl;
         std::cout << "img.cols:" << img.cols << std::endl;
     } else {
-
         // Use: boxes.templates
-        cv::imshow("view", img);
-        cv::waitKey(10);
+    	for (int i = 0; i < boxes.templates.size(); ++i)
+    	{
+    		double matches = matchToTemplate(boxes.templates[i]);
+    		std::cout << "Template [" << i << "] matched:  " << matches << std::endl;
+    	}
     }
     return template_id;
 }
 
-bool ImagePipeline::matchToTemplate(std::string template_img_path){
+double ImagePipeline::matchToTemplate(Mat img_object){
 	/***
 	 * SURF feature detector using implementation found at:
 	 * https://docs.opencv.org/3.0-beta/doc/tutorials/features2d/feature_homography/feature_homography.html#feature-homography
+	 *
+	 * This function takes a template image path, loads it as a grayscale image and finds
+	 * a number of feature matches using SURF features.
+	 * For this template, it then computes a probability P(object|scene).
 	 ***/
 
 	  Mat img_object = imread( template_img_path, IMREAD_GRAYSCALE );
@@ -88,6 +94,11 @@ bool ImagePipeline::matchToTemplate(std::string template_img_path){
 				   good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
 				   vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
+	  /***
+	   * We have completed the matches. In the next section of code we will attempt to fit a
+	   * bounding box over the identified object in the scene image.
+	   */
+
 	  //-- Localize the object
 	  std::vector<Point2f> obj;
 	  std::vector<Point2f> scene;
@@ -117,4 +128,11 @@ bool ImagePipeline::matchToTemplate(std::string template_img_path){
 
 	  //-- Show detected matches
 	  imshow( "Good Matches & Object detection", img_matches );
+
+	  /***
+	   * In this section of the code we use a chosen heuristic to decided how good the match
+	   * is the to given template.
+	   * One such heuristic is the absolute number of good_matches found.
+	   */
+	  return (double)good_matches.size();
 }
