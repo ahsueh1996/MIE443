@@ -24,10 +24,12 @@ int main(int argc, char** argv) {
     // Initialize image objectand subscriber.
     ImagePipeline imagePipeline(n);
     float dist_b_g = 0.45; //cm
+    const double pi = 3.14159;
 
     float x;
     float y;
     float phi;
+    int checked[5] = {0,0,0,0,0};
 
     Navigation  nav;
 
@@ -45,10 +47,11 @@ int main(int argc, char** argv) {
         phi = boxes.coords[i][2];
 
         goals[i][0] = x + dist_b_g * cos(phi);
-        goals[i][1] = y - dist_b_g * sin(phi);
-        goals[i][2] =  90 + phi;
+        goals[i][1] = y + dist_b_g * sin(phi);
+        goals[i][2] =  pi + phi;
     }
     std::cout << "ready to exec strat" << std::endl;
+
 
     // Execute strategy.
     while(ros::ok()){
@@ -56,9 +59,17 @@ int main(int argc, char** argv) {
         /***YOUR CODE HERE***/
         // Use: boxes.coords
         std::cout << goals[0][0] << ", " << goals[0][1] << ", "<< goals[0][2]<<std::endl;
-        nav.moveToGoal(goals[0][0], goals[0][1], goals[0][2]);
+
+        for (int i=0;i < boxes.coords.size(); ++i){
+			if(checked[i] == 0){
+				if(nav.moveToGoal(goals[i][0], goals[i][1], goals[i][2])){
+					checked[i] = 1;
+				}
+			}
+		}
+
         // Use: robotPose.x, robotPose.y, robotPose.phi
-        //imagePipeline.getTemplateID(boxes);
+        imagePipeline.getTemplateID(boxes);
         ros::Duration(0.01).sleep();
     }
     return 0;
