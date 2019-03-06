@@ -5,9 +5,9 @@
 
 class pathPlanner {
 	public:
-		int NUM_LOC = 6;
+		static const int NUM_LOC = 6;
 		double adjacency [NUM_LOC][NUM_LOC];
-		std::vector<int> plan [6];
+		std::vector<int> plan;
 
 		double squaredEuclDist(double x1, double y1, double x2, double y2){
 			return (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2);
@@ -44,7 +44,7 @@ class pathPlanner {
 			}
 		}
 
-		void permute(){
+	 	void permute(){
 			//std::vector<int> places = {0,1,2,3,4,5};
 			double minSum = std::numeric_limits<double>::infinity();
 			int places[] = {0,1,2,3,4,5};
@@ -61,7 +61,13 @@ class pathPlanner {
 				}
     			//std::cout << places[0] << ' ' << places[1] << ' ' << places[2] << ' ' << places[3] << ' ' << places[4] << ' ' << places[5] << '\n';
     		} while ( std::next_permutation(places+1,places+6) );
-    		std::cout << temp[0] << ' ' << temp[1] << ' ' << temp[2] << ' ' << temp[3] << ' ' << temp[4] << ' ' << temp[5] << '\n';
+    		// std::cout << temp[0] << ' ' << temp[1] << ' ' << temp[2] << ' ' << temp[3] << ' ' << temp[4] << ' ' << temp[5] << '\n';
+    		for (int i = 1; i <NUM_LOC ; ++i)
+    		{
+				plan.push_back(temp[i]);
+    		}
+    		plan.push_back(temp[0]);
+    		std::cout << plan[0] << ' ' << plan[1] << ' ' << plan[2] << ' ' << plan[3] << ' ' << plan[4] << ' ' << plan[5] << '\n';
 		}
 };
 
@@ -93,7 +99,7 @@ int main(int argc, char** argv) {
     double x;
     double y;
     double phi;
-    int checked[5] = {0,0,0,0,0};
+    int checked[6] = {0,0,0,0,0,0};
 
     Navigation  nav;
 
@@ -109,9 +115,9 @@ int main(int argc, char** argv) {
     goals[1][0] = robotPose.y;
     goals[2][0] = robotPose.phi;
     for(int i = 1; i < boxes.coords.size(); ++i) {
-        x = boxes.coords[i][0];
-        y = boxes.coords[i][1];
-        phi = boxes.coords[i][2];
+        x = boxes.coords[i-1][0];
+        y = boxes.coords[i-1][1];
+        phi = boxes.coords[i-1][2];
 
         goals[0][i] = x + dist_b_g * cos(phi);
         goals[1][i] = y + dist_b_g * sin(phi);
@@ -126,23 +132,32 @@ int main(int argc, char** argv) {
 
     std::cout << "ready to exec strat" << std::endl;
 
-
+    int ind;
     // Execute strategy.
     while(ros::ok()){
         ros::spinOnce();
         /***YOUR CODE HERE***/
         // Use: boxes.coords
+       // std::cout << "spinOnce" << std::endl;
+       for (int i=0;i < boxes.coords.size() + 1; ++i){
+       		ind = planner.plan[i];
+       		ros::spinOnce();
+       		imagePipeline.getTemplateID(boxes);
+       		// std::cout << checked << std::endl;
+       		//std::cout << "going towards this ind" ind << std::endl;
+			if(checked[i] == 0){
+				std::cout << "going towards this ind"<< ind << std::endl;
 
-//        for (int i=0;i < boxes.coords.size(); ++i){
-//			if(checked[i] == 0){
-//				if(nav.moveToGoal(goals[i][0], goals[i][1], goals[i][2])){
-//					checked[i] = 1;
-//				}
-//			}
-//		}
+				std::cout << "moving towards goal: " << goals[0][ind] << goals[1][ind] << goals[2][ind] << std::endl;
+				if(nav.moveToGoal(goals[0][ind], goals[1][ind], goals[2][ind])){
+					
+					checked[i] = 1;
+				}
+			}
+		}
 
         // Use: robotPose.x, robotPose.y, robotPose.phi
-        imagePipeline.getTemplateID(boxes);
+        
         ros::Duration(0.01).sleep();
     }
     return 0;

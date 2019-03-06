@@ -26,7 +26,7 @@ void ImagePipeline::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 int ImagePipeline::getTemplateID(Boxes& boxes) {
     int template_id = -1;
     if(!isValid) {
-        std::cout << "ERROR: INVALID IMAGE!" << std::endl;
+        // std::cout << "ERROR: INVALID IMAGE!" << std::endl;
     } else if(img.empty() || img.rows <= 0 || img.cols <= 0) {
         std::cout << "ERROR: VALID IMAGE, BUT STILL A PROBLEM EXISTS!" << std::endl;
         std::cout << "img.empty():" << img.empty() << std::endl;
@@ -40,8 +40,9 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
 //    		double matches = matchToTemplate(boxes.templates[i]);
 //    		std::cout << "Template [" << i << "] matched:  " << matches << std::endl;
 //    	}
+        // std::cout << "attempt disp img" << std::endl;
         cv::imshow("view", img);
-        cv::waitKey(0);
+        // cv::waitKey(0);
 
     }
     return template_id;
