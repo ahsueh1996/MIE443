@@ -101,7 +101,7 @@ def train_model(vgg, criterion, optimizer, scheduler, num_epochs=10):
         
         for i, data in enumerate(dataloaders[TRAIN]):
             if i % 100 == 0:
-                print("\rTraining batch {}/{}".format(i, train_batches / 2), end='', flush=True)
+                print("\rTraining batch {}/{}".format(i, train_batches / 2), end='')#, flush=True)
                 
             # Use half training dataset
             if i >= train_batches / 2:
@@ -141,7 +141,7 @@ def train_model(vgg, criterion, optimizer, scheduler, num_epochs=10):
             
         for i, data in enumerate(dataloaders[VAL]):
             if i % 100 == 0:
-                print("\rValidation batch {}/{}".format(i, val_batches), end='', flush=True)
+                print("\rValidation batch {}/{}".format(i, val_batches), end='')#, flush=True)
                 
             inputs, labels = data
             
@@ -201,7 +201,7 @@ def eval_model(vgg, criterion):
     
     for i, data in enumerate(dataloaders[TEST]):
         if i % 100 == 0:
-            print("\rTest batch {}/{}".format(i, test_batches), end='', flush=True)
+            print("\rTest batch {}/{}".format(i, test_batches), end='')#, flush=True)
 
         vgg.train(False)
         vgg.eval()
@@ -235,7 +235,7 @@ def eval_model(vgg, criterion):
     
     
 if __name__ == "__main__":
-    use_gpu = torch.cuda.is_available()
+    use_gpu = torch.cuda.is_available() and False
     if use_gpu:
         print("Using CUDA")
     else:
