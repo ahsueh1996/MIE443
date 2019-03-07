@@ -99,65 +99,88 @@ int main(int argc, char** argv) {
     double x;
     double y;
     double phi;
+
+	// Array to check if we arrived at the goal
     int checked[6] = {0,0,0,0,0,0};
 
     Navigation  nav;
 
-    std::cout << "initializing goals" << std::endl;
-
+	// Initialize the goals vector
     std::vector<std::vector<double>> goals;
     for(int i = 0; i < 3; ++i) {
         goals.push_back(std::vector<double>(boxes.coords.size()+1,0.0));
     }
 
-    std::cout << "filling box coords" << std::endl;
-    goals[0][0] = robotPose.x;
-    goals[1][0] = robotPose.y;
-    goals[2][0] = robotPose.phi;
-    for(int i = 1; i < boxes.coords.size(); ++i) {
-        x = boxes.coords[i-1][0];
-        y = boxes.coords[i-1][1];
-        phi = boxes.coords[i-1][2];
-
-        goals[0][i] = x + dist_b_g * cos(phi);
-        goals[1][i] = y + dist_b_g * sin(phi);
-        goals[2][i] =  pi + phi;
-    }
-
-
+	// Initialize the planner
     pathPlanner planner;
-    planner.setAdjacency(goals);
-    planner.printAdjacency();
-    planner.permute();
 
-    std::cout << "ready to exec strat" << std::endl;
+	// Need the robot pose callback
+	ros::spinOnce();
+	ros::Duration(0.01).sleep();
+	ros::spinOnce();
+
+	std::cout << "robot initial pose: " << robotPose.x <<  robotPose.y << robotPose.phi << std::endl;
+
+	// First goal is the initial position (We have to get back to the initial position at the end)
+	goals[0][0] = robotPose.x;
+	goals[1][0] = robotPose.y;
+	goals[2][0] = robotPose.phi;
+
+	// Fill up the goal positions
+	for(int i = 1; i < boxes.coords.size() + 1; ++i) {
+
+		// Index starts from 1, start checking from index 0
+		x = boxes.coords[i-1][0];
+		y = boxes.coords[i-1][1];
+		phi = boxes.coords[i-1][2];
+
+		// Start filling up the goals from index 1
+		// dist_b_g distance away from the box
+		goals[0][i] = x + dist_b_g * cos(phi);
+		goals[1][i] = y + dist_b_g * sin(phi);
+
+		// Face the box
+		goals[2][i] =  pi + phi;
+	}
+	// Insert the goals
+	planner.setAdjacency(goals);
+	planner.printAdjacency();
+
+	// Update the planner
+	planner.permute();
 
     int ind;
+	int i = 0;
+	int img;
     // Execute strategy.
     while(ros::ok()){
-        ros::spinOnce();
-        /***YOUR CODE HERE***/
-        // Use: boxes.coords
-       // std::cout << "spinOnce" << std::endl;
-       for (int i=0;i < boxes.coords.size() + 1; ++i){
-       		ind = planner.plan[i];
-       		ros::spinOnce();
-       		imagePipeline.getTemplateID(boxes);
-       		// std::cout << checked << std::endl;
-       		//std::cout << "going towards this ind" ind << std::endl;
-			if(checked[i] == 0){
-				std::cout << "going towards this ind"<< ind << std::endl;
+		/***YOUR CODE HERE***/
 
-				std::cout << "moving towards goal: " << goals[0][ind] << goals[1][ind] << goals[2][ind] << std::endl;
-				if(nav.moveToGoal(goals[0][ind], goals[1][ind], goals[2][ind])){
-					
-					checked[i] = 1;
-				}
-			}
+		// Index of the box to check
+		ind = planner.plan[i];
+		std::cout << "ind: " << ind << std::endl;
+		
+		std::cout << "moving towards: " << goals[0][ind] <<  goals[1][ind] << goals[2][ind] << std::endl;
+		// Move towards the first box
+		if(nav.moveToGoal(goals[0][ind], goals[1][ind], goals[2][ind])){
+			// Goto the next box
+			i += 1;
+        	ros::Duration(0.01).sleep();
+			ros::spinOnce();
+	
+			img = imagePipeline.getTemplateID(boxes);
+			std::cout << "Image: " << img << std::endl;
+
+		}
+		else{
+			i += 1;
 		}
 
-        // Use: robotPose.x, robotPose.y, robotPose.phi
+		if (i > 5){
+			return 0;
+		}		
         
+        ros::spinOnce();
         ros::Duration(0.01).sleep();
     }
     return 0;

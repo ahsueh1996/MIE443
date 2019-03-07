@@ -1,7 +1,7 @@
 #include <imagePipeline.h>
 
 #define IMAGE_TYPE sensor_msgs::image_encodings::BGR8
-#define IMAGE_TOPIC "camera/rgb/image_raw" // kinect:"camera/rgb/image_raw" webcam:"camera/image"
+#define IMAGE_TOPIC "camera/image" // kinect:"camera/rgb/image_raw" webcam:"camera/image"
 
 ImagePipeline::ImagePipeline(ros::NodeHandle& n) {
     image_transport::ImageTransport it(n);
@@ -26,24 +26,29 @@ void ImagePipeline::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 int ImagePipeline::getTemplateID(Boxes& boxes) {
     int template_id = -1;
     if(!isValid) {
-        // std::cout << "ERROR: INVALID IMAGE!" << std::endl;
+        std::cout << "ERROR: INVALID IMAGE!" << std::endl;
     } else if(img.empty() || img.rows <= 0 || img.cols <= 0) {
         std::cout << "ERROR: VALID IMAGE, BUT STILL A PROBLEM EXISTS!" << std::endl;
         std::cout << "img.empty():" << img.empty() << std::endl;
         std::cout << "img.rows:" << img.rows << std::endl;
         std::cout << "img.cols:" << img.cols << std::endl;
     } else {
-
+    std::cout << "Checking boxes" << std::endl;
+    double best_matches = 300;
+    template_id = 3;
         // Use: boxes.templates
    	for (int i = 0; i < boxes.templates.size(); ++i)
    	{
    		double matches = matchToTemplate(boxes.templates[i]);
    		std::cout << "Template [" << i << "] matched:  " << matches << std::endl;
-   	}
+        if (matches > best_matches){
+            best_matches = matches;
+            template_id = i;
+        }
+    }
         // std::cout << "attempt disp img" << std::endl;
-        cv::imshow("view", img);
-        // cv::waitKey(0);
-
+        //cv::imshow("view", img);
+        //cv::waitKey(10);
     }
     return template_id;
 }
@@ -63,13 +68,13 @@ double ImagePipeline::matchToTemplate(Mat img_object){
 
     //--Step 1& 2: Detect the keypoints and calculate descriptors using SURF Detectorintmin
     int minHessian = 400;
-
     Ptr<SURF> detector = SURF::create(minHessian);
     std::vector<KeyPoint>keypoints_object,keypoints_scene;
     Mat descriptors_object, descriptors_scene;
-    detector->detectAndCompute(img_object, Mat(), keypoints_object, descriptors_object);
-    detector->detectAndCompute(img, Mat(), keypoints_scene, descriptors_scene);
 
+    detector->detectAndCompute(img_object, Mat(), keypoints_object, descriptors_object);
+
+    detector->detectAndCompute(img, Mat(), keypoints_scene, descriptors_scene);
     //-- Step 3: Matching descriptor vectors using FLANN matcher
     FlannBasedMatcher matcher;
     std::vector< DMatch > matches;
@@ -84,8 +89,8 @@ double ImagePipeline::matchToTemplate(Mat img_object){
     if( dist > max_dist ) max_dist = dist;
     }
 
-    printf("-- Max dist : %f \n", max_dist );
-    printf("-- Min dist : %f \n", min_dist );
+    //printf("-- Max dist : %f \n", max_dist );
+    //printf("-- Min dist : %f \n", min_dist );
 
     //-- Draw only "good" matches (i.e. whose distance is less than 3*min_dist )
     std::vector< DMatch > good_matches;
@@ -134,7 +139,7 @@ double ImagePipeline::matchToTemplate(Mat img_object){
 
     //-- Show detected matches
     imshow( "Good Matches & Object detection", img_matches );
-
+    cv::waitKey(10);
     /***
      * In this section of the code we use a chosen heuristic to decided how good the match
      * is the to given template.

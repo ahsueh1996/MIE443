@@ -7,3 +7,14 @@ roslaunch turtlebot_rviz_launchers view_navigation.launch
 roslaunch turtlebot_teleop keyboard_teleop.launch
 
 
+Gazebo:
+
+roslaunch mie443_contest2 turtlebot_world.launch world:=1
+
+roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/richard/map_1.yaml
+
+roslaunch turtlebot_rviz_launchers view_navigation.launch
+
+***Is there a kinect custom costmap?? if so, update that
+***Could we do the wiggle?
+

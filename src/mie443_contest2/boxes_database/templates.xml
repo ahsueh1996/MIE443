@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <opencv_storage>
 	<templates>
-		"tag1.jpg"
-		"tag2.jpg"
-		"tag3.jpg"
+		"template1.jpg"
+		"template2.jpg"
+		"template3.jpg"
 	</templates>
 </opencv_storage>
