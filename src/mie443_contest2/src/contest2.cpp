@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     ImagePipeline imagePipeline(n);
 
     // Define our goals, ie. the 5 objects with pictures on them
-    double dist_b_g = 0.45; //cm
+    double dist_b_g = 0.60; //cm
     const double pi = 3.14159;
 
     double x;
@@ -116,7 +116,9 @@ int main(int argc, char** argv) {
 
 	// Need the robot pose callback
 	ros::spinOnce();
-	ros::Duration(0.01).sleep();
+	ros::Duration(0.10).sleep();
+	ros::spinOnce();
+	ros::Duration(0.10).sleep();
 	ros::spinOnce();
 
 	std::cout << "robot initial pose: " << robotPose.x <<  robotPose.y << robotPose.phi << std::endl;
@@ -170,6 +172,7 @@ int main(int argc, char** argv) {
 	
 			img = imagePipeline.getTemplateID(boxes);
 			std::cout << "Image: " << img << std::endl;
+			checked[ind] = 1;	
 
 		}
 		else{
@@ -177,6 +180,19 @@ int main(int argc, char** argv) {
 		}
 
 		if (i > 5){
+			nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0]);
+			for (int j = 0; j < 5; ++j){
+				ind = planner.plan[j];
+				if (checked[ind] == 0){
+					checked[ind] = nav.moveToGoal(goals[0][ind], goals[1][ind], goals[2][ind]);
+					ros::Duration(0.01).sleep();
+					ros::spinOnce();
+	
+					img = imagePipeline.getTemplateID(boxes);
+					std::cout << "Image: " << img << std::endl;
+				}
+			}
+			nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0]);
 			return 0;
 		}		
         

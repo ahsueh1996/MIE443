@@ -1,7 +1,8 @@
 #include <imagePipeline.h>
+#include <string>
 
 #define IMAGE_TYPE sensor_msgs::image_encodings::BGR8
-#define IMAGE_TOPIC "camera/image" // kinect:"camera/rgb/image_raw" webcam:"camera/image"
+#define IMAGE_TOPIC "camera/rgb/image_raw" // kinect:"camera/rgb/image_raw" webcam:"camera/image"
 
 ImagePipeline::ImagePipeline(ros::NodeHandle& n) {
     image_transport::ImageTransport it(n);
@@ -36,6 +37,12 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
     std::cout << "Checking boxes" << std::endl;
     double best_matches = 300;
     template_id = 3;
+
+    std::string time = std::to_string((int)ros::Time::now().toSec());
+    std::string name = "/home/turtlebot/images/" + time +".jpg";
+    std::cout << name << std::endl;
+    imwrite( name,  img );
+
         // Use: boxes.templates
    	for (int i = 0; i < boxes.templates.size(); ++i)
    	{
@@ -47,8 +54,8 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
         }
     }
         // std::cout << "attempt disp img" << std::endl;
-        //cv::imshow("view", img);
-        //cv::waitKey(10);
+        cv::imshow("view", img);
+        cv::waitKey(5000);
     }
     return template_id;
 }
