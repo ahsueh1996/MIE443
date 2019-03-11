@@ -93,7 +93,8 @@ int main(int argc, char** argv) {
     ImagePipeline imagePipeline(n);
 
     // Define our goals, ie. the 5 objects with pictures on them
-    double dist_b_g = 0.60; //cm
+    //double dist_b_g = 0.60; //cm
+	double dist_b_g = 0.4;
     const double pi = 3.14159;
 
     double x;
@@ -161,40 +162,48 @@ int main(int argc, char** argv) {
 		// Index of the box to check
 		ind = planner.plan[i];
 		std::cout << "ind: " << ind << std::endl;
-		
-		std::cout << "moving towards: " << goals[0][ind] <<  goals[1][ind] << goals[2][ind] << std::endl;
+
+		//std::cout << "moving towards: " << goals[0][ind] <<  goals[1][ind] << goals[2][ind] << std::endl;
+
 		// Move towards the first box
 		if(nav.moveToGoal(goals[0][ind], goals[1][ind], goals[2][ind])){
-			// Goto the next box
+			// Increment the index of the box for the next iteration
 			i += 1;
-        	ros::Duration(0.01).sleep();
+        	ros::Duration(0.10).sleep();
 			ros::spinOnce();
-	
+
+			// Image recognition
 			img = imagePipeline.getTemplateID(boxes);
 			std::cout << "Image: " << img << std::endl;
-			checked[ind] = 1;	
 
+			// Mark the box as visited
+			checked[ind] = 1;	
 		}
 		else{
+			// If failed to visit this box, move onto the next box
 			i += 1;
 		}
+		if (i > 4){
+			// Return back to the origianl pose and terminate
+			if(nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0])) return 0;
+		}
 
-		if (i > 5){
-			nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0]);
-			for (int j = 0; j < 5; ++j){
-				ind = planner.plan[j];
-				if (checked[ind] == 0){
-					checked[ind] = nav.moveToGoal(goals[0][ind], goals[1][ind], goals[2][ind]);
-					ros::Duration(0.01).sleep();
-					ros::spinOnce();
+		// Probably don't have enough time to do this.
+		// if (i > 5){
+		// 	for (int j = 0; j < 5; ++j){
+		// 		ind = planner.plan[j];
+		// 		if (checked[ind] == 0){
+		// 			checked[ind] = nav.moveToGoal(goals[0][ind], goals[1][ind], goals[2][ind]);
+		// 			ros::Duration(0.01).sleep();
+		// 			ros::spinOnce();
 	
-					img = imagePipeline.getTemplateID(boxes);
-					std::cout << "Image: " << img << std::endl;
-				}
-			}
-			nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0]);
-			return 0;
-		}		
+		// 			img = imagePipeline.getTemplateID(boxes);
+		// 			std::cout << "Image: " << img << std::endl;
+		// 		}
+		// 	}
+		// 	nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0]);
+		// 	return 0;
+		// }		
         
         ros::spinOnce();
         ros::Duration(0.01).sleep();

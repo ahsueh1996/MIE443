@@ -2,7 +2,7 @@
 #include <string>
 
 #define IMAGE_TYPE sensor_msgs::image_encodings::BGR8
-#define IMAGE_TOPIC "camera/rgb/image_raw" // kinect:"camera/rgb/image_raw" webcam:"camera/image"
+#define IMAGE_TOPIC "camera/image" // kinect:"camera/rgb/image_raw" webcam:"camera/image"
 
 ImagePipeline::ImagePipeline(ros::NodeHandle& n) {
     image_transport::ImageTransport it(n);
@@ -34,29 +34,58 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
         std::cout << "img.rows:" << img.rows << std::endl;
         std::cout << "img.cols:" << img.cols << std::endl;
     } else {
-    std::cout << "Checking boxes" << std::endl;
-    double best_matches = 300;
-    template_id = 3;
 
-    std::string time = std::to_string((int)ros::Time::now().toSec());
-    std::string name = "/home/turtlebot/images/" + time +".jpg";
-    std::cout << name << std::endl;
-    imwrite( name,  img );
+        // Code for saving the images
+        // std::string time = std::to_string((int)ros::Time::now().toSec());
+        // std::string name = "/home/turtlebot/images/" + time +".jpg";
+        // std::cout << name << std::endl;
+        //imwrite( name,  img );
 
-        // Use: boxes.templates
-   	for (int i = 0; i < boxes.templates.size(); ++i)
-   	{
-   		double matches = matchToTemplate(boxes.templates[i]);
-   		std::cout << "Template [" << i << "] matched:  " << matches << std::endl;
-        if (matches > best_matches){
-            best_matches = matches;
-            template_id = i;
+        // Blank images have some multiple matches greater than ~10
+        double min_matches_blank = 10;
+        
+        // initialize it to the blank index
+        template_id = 3;
+
+        // Marks whether the box is blank or not
+        bool marked = false;
+
+        // Records the best match
+        double best_matches = 50;
+
+        // For each box templates
+        for (int i = 0; i < boxes.templates.size(); ++i)
+        {
+            // Match each box to the template
+            double matches = matchToTemplate(boxes.templates[i]);
+            std::cout << "Template [" << i << "] matched:  " << matches << std::endl;
+            
+            // // Heuristics for classification 1
+            // if (matches > min_matches_blank){
+            //     // Blank box: two or more template with multiple matches
+            //     if (best_matches > min_matches_blank) marked = true;
+            //     if (matches > best_matches){
+            //         best_matches = matches;
+            //         template_id = i;
+            //     }
+                
+            // }
+            // if (marked) template_id = 3;
+
+
+            // Heuristics for classification 2
+            if (matches > best_matches){
+                best_matches = matches;
+                template_id = i;
+            }
+                
         }
     }
+
+        // For displaying the image
         // std::cout << "attempt disp img" << std::endl;
-        cv::imshow("view", img);
-        cv::waitKey(5000);
-    }
+        // cv::imshow("view", img);
+        // cv::waitKey(1000);
     return template_id;
 }
 
@@ -108,9 +137,9 @@ double ImagePipeline::matchToTemplate(Mat img_object){
     }
 
     Mat img_matches;
-    drawMatches( img_object, keypoints_object, img, keypoints_scene,
-                good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-                std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    // drawMatches( img_object, keypoints_object, img, keypoints_scene,
+    //              good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+    //              std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
     /***
      * We have completed the matches. In the next section of code we will attempt to fit a
@@ -136,21 +165,45 @@ double ImagePipeline::matchToTemplate(Mat img_object){
     obj_corners[2] = cvPoint( img_object.cols, img_object.rows ); obj_corners[3] = cvPoint( 0, img_object.rows );
     std::vector<Point2f> scene_corners(4);
 
+    // Define scene_corners using Homography
     perspectiveTransform( obj_corners, scene_corners, H);
 
-    //-- Draw lines between the corners (the mapped object in the scene - image_2 )
-    line( img_matches, scene_corners[0] + Point2f( img_object.cols, 0), scene_corners[1] + Point2f( img_object.cols, 0), Scalar(0, 255, 0), 4 );
-    line( img_matches, scene_corners[1] + Point2f( img_object.cols, 0), scene_corners[2] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
-    line( img_matches, scene_corners[2] + Point2f( img_object.cols, 0), scene_corners[3] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
-    line( img_matches, scene_corners[3] + Point2f( img_object.cols, 0), scene_corners[0] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+    // Define a contour using the scene_corners
+    std::vector<Point2f> contour;
+    for (int i = 0; i < 4; i++){
+	    contour.push_back(scene_corners[i] + Point2f( img_object.cols, 0));
+    }
 
+    double indicator;
+    std::vector< DMatch > best_matches;
+
+    // Check if the good match is inside the contour.
+    Point2f matched_point;
+    for( int i = 0; i < good_matches.size(); i++ )
+    {
+        matched_point = keypoints_scene[ good_matches[i].trainIdx ].pt + Point2f( img_object.cols, 0);
+        indicator = pointPolygonTest(contour, matched_point, false);
+        if(indicator >= 0) best_matches.push_back( good_matches[i]);
+    }
+    
+    // drawMatches( img_object, keypoints_object, img, keypoints_scene,
+    //              best_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+    //              std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+
+    //-- Draw lines between the corners (the mapped object in the scene - image_2 )
+    // line( img_matches, scene_corners[0] + Point2f( img_object.cols, 0), scene_corners[1] + Point2f( img_object.cols, 0), Scalar(0, 255, 0), 4 );
+    // line( img_matches, scene_corners[1] + Point2f( img_object.cols, 0), scene_corners[2] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+    // line( img_matches, scene_corners[2] + Point2f( img_object.cols, 0), scene_corners[3] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+    // line( img_matches, scene_corners[3] + Point2f( img_object.cols, 0), scene_corners[0] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+    
     //-- Show detected matches
-    imshow( "Good Matches & Object detection", img_matches );
-    cv::waitKey(10);
+    //imshow( "Good Matches & Object detection", img_object );
+    //cv::waitKey(10);
     /***
      * In this section of the code we use a chosen heuristic to decided how good the match
      * is the to given template.
      * One such heuristic is the absolute number of good_matches found.
      */
-    return (double)good_matches.size();
+
+    return (double)best_matches.size();
 }

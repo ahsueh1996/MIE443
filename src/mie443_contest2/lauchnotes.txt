@@ -9,11 +9,17 @@ roslaunch turtlebot_teleop keyboard_teleop.launch
 
 Gazebo:
 
+1) Change boxes.coords
+2) Make sure template names are correct
+3) Make sure AMCL map is well represented on rviz
+
 roslaunch mie443_contest2 turtlebot_world.launch world:=1
 
 roslaunch turtlebot_gazebo amcl_demo.launch map_file:=/home/richard/map_1.yaml
 
 roslaunch turtlebot_rviz_launchers view_navigation.launch
+
+rosrun mie443_contest2 webcam_publisher 0
 
 ***Is there a kinect custom costmap?? if so, update that
 ***Could we do the wiggle?
