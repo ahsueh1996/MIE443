@@ -114,7 +114,11 @@ double ImagePipeline::matchToTemplate(Mat img_object){
     //-- Step 3: Matching descriptor vectors using FLANN matcher
     FlannBasedMatcher matcher;
     std::vector< DMatch > matches;
-    matcher.match( descriptors_object, descriptors_scene, matches );
+     try {
+        matcher.match( descriptors_object, descriptors_scene, matches );
+    } catch (Exception& e) {
+        ;
+    }
 
     double max_dist = 0; double min_dist = 100;
 
@@ -166,7 +170,11 @@ double ImagePipeline::matchToTemplate(Mat img_object){
     std::vector<Point2f> scene_corners(4);
 
     // Define scene_corners using Homography
-    perspectiveTransform( obj_corners, scene_corners, H);
+    try {
+        perspectiveTransform( obj_corners, scene_corners, H);
+    } catch (Exception& e) {
+        ;
+    }
 
     // Define a contour using the scene_corners
     std::vector<Point2f> contour;
@@ -186,19 +194,19 @@ double ImagePipeline::matchToTemplate(Mat img_object){
         if(indicator >= 0) best_matches.push_back( good_matches[i]);
     }
     
-    // drawMatches( img_object, keypoints_object, img, keypoints_scene,
-    //              best_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-    //              std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    drawMatches( img_object, keypoints_object, img, keypoints_scene,
+                 best_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+                 std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
     //-- Draw lines between the corners (the mapped object in the scene - image_2 )
-    // line( img_matches, scene_corners[0] + Point2f( img_object.cols, 0), scene_corners[1] + Point2f( img_object.cols, 0), Scalar(0, 255, 0), 4 );
-    // line( img_matches, scene_corners[1] + Point2f( img_object.cols, 0), scene_corners[2] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
-    // line( img_matches, scene_corners[2] + Point2f( img_object.cols, 0), scene_corners[3] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
-    // line( img_matches, scene_corners[3] + Point2f( img_object.cols, 0), scene_corners[0] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+    line( img_matches, scene_corners[0] + Point2f( img_object.cols, 0), scene_corners[1] + Point2f( img_object.cols, 0), Scalar(0, 255, 0), 4 );
+    line( img_matches, scene_corners[1] + Point2f( img_object.cols, 0), scene_corners[2] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+    line( img_matches, scene_corners[2] + Point2f( img_object.cols, 0), scene_corners[3] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
+    line( img_matches, scene_corners[3] + Point2f( img_object.cols, 0), scene_corners[0] + Point2f( img_object.cols, 0), Scalar( 0, 255, 0), 4 );
     
     //-- Show detected matches
-    //imshow( "Good Matches & Object detection", img_object );
-    //cv::waitKey(10);
+    imshow( "Good Matches & Object detection", img_matches );
+    cv::waitKey(10);
     /***
      * In this section of the code we use a chosen heuristic to decided how good the match
      * is the to given template.

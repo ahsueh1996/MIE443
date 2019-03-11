@@ -163,6 +163,13 @@ int main(int argc, char** argv) {
 		ind = planner.plan[i];
 		std::cout << "ind: " << ind << std::endl;
 
+		ros::Duration(0.10).sleep();
+		ros::spinOnce();
+
+		// Image recognition
+		img = imagePipeline.getTemplateID(boxes);
+		std::cout << "Image: " << img << std::endl;
+		continue;
 		//std::cout << "moving towards: " << goals[0][ind] <<  goals[1][ind] << goals[2][ind] << std::endl;
 
 		// Move towards the first box
