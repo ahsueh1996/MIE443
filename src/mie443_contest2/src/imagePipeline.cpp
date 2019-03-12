@@ -51,10 +51,10 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
         template_id = 3;
 
         // Marks whether the box is blank or not
-        bool marked = false;
+        // bool marked = false;
 
         // Records the best match, also if all matches less than this value, then probably blank
-        double best_matches = 5;
+        double best_matches = 0;
 
 
         // For each box templates
@@ -106,7 +106,7 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
         // cv::waitKey(1000);
 
 
-
+    std::cout  << "best id:  " << template_id << std::endl;
     return template_id;
 }
 
@@ -208,6 +208,17 @@ double ImagePipeline::matchToTemplate(Mat img_object){
     for (int i = 0; i < 4; i++){
 	    contour.push_back(scene_corners[i] + Point2f( img_object.cols, 0));
     }
+    double area = contourArea(contour);
+    double area_weight = 1.0;
+    if (area >  600*400 || area < 10 * 10)
+    {
+        area_weight = 0.0;
+    }
+    else
+    {
+        area_weight = 1.0;
+    }
+    std::cout << "area: " << area << ", weight: " << area_weight << std::endl;
 
     double indicator;
     std::vector< DMatch > best_matches;
@@ -240,5 +251,5 @@ double ImagePipeline::matchToTemplate(Mat img_object){
      * One such heuristic is the absolute number of good_matches found.
      */
 
-    return (double)best_matches.size();
+    return (double)best_matches.size()*area_weight;
 }

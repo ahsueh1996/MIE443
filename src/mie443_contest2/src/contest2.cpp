@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
 
     // Define our goals, ie. the 5 objects with pictures on them
     //double dist_b_g = 0.60; //cm
-	double dist_b_g = 0.6;
+	double dist_b_g = 0.55;
     const double pi = 3.14159;
 
     double x;

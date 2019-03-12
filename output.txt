@@ -1,0 +1,3 @@
+Box: 1
+At location (2.67, 0.038, 2.42)
+Raisin Bran was found
