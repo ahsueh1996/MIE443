@@ -3,6 +3,13 @@
 #include <robot_pose.h>
 #include <imagePipeline.h>
 
+#include <math.h>
+#include <algorithm>
+#include <limits>
+
+#include <iostream>
+#include <fstream>
+
 class pathPlanner {
 	public:
 		static const int NUM_LOC = 6;
@@ -94,7 +101,7 @@ int main(int argc, char** argv) {
 
     // Define our goals, ie. the 5 objects with pictures on them
     //double dist_b_g = 0.60; //cm
-	double dist_b_g = 0.4;
+	double dist_b_g = 0.6;
     const double pi = 3.14159;
 
     double x;
@@ -154,22 +161,26 @@ int main(int argc, char** argv) {
 
     int ind;
 	int i = 0;
-	int img;
+	int first_img;
+	int second_img;
+	int third_img;
+	int final_decision;
+	int tags[5] = {0,0,0,0,0}; 
     // Execute strategy.
     while(ros::ok()){
 		/***YOUR CODE HERE***/
 
 		// Index of the box to check
 		ind = planner.plan[i];
-		std::cout << "ind: " << ind << std::endl;
+		std::cout << "Box: " << ind << std::endl;
 
 		ros::Duration(0.10).sleep();
 		ros::spinOnce();
 
 		// Image recognition
-		img = imagePipeline.getTemplateID(boxes);
-		std::cout << "Image: " << img << std::endl;
-		continue;
+		// img = imagePipeline.getTemplateID(boxes);
+		// std::cout << "Image: " << img << std::endl;
+		// continue;
 		//std::cout << "moving towards: " << goals[0][ind] <<  goals[1][ind] << goals[2][ind] << std::endl;
 
 		// Move towards the first box
@@ -180,8 +191,64 @@ int main(int argc, char** argv) {
 			ros::spinOnce();
 
 			// Image recognition
-			img = imagePipeline.getTemplateID(boxes);
-			std::cout << "Image: " << img << std::endl;
+			std::cout << "Taking first picture" << std::endl << std::endl;
+			first_img = imagePipeline.getTemplateID(boxes);
+			std::cout << std::endl;
+			ros::Duration(0.10).sleep();
+			ros::spinOnce();
+			ros::Duration(0.60).sleep();
+			ros::spinOnce();
+
+			std::cout << "Taking second picture" << std::endl << std::endl;
+			second_img = imagePipeline.getTemplateID(boxes);
+			std::cout << std::endl;
+
+			if (first_img != second_img){
+				ros::Duration(0.10).sleep();
+				ros::spinOnce();
+				ros::Duration(0.60).sleep();
+				ros::spinOnce();
+
+
+				std::cout << "Taking third picture" << std::endl << std::endl;
+				third_img = imagePipeline.getTemplateID(boxes);
+				std::cout << std::endl;
+
+
+				if (third_img == first_img){ 
+					final_decision = first_img;
+				}
+				if (third_img == second_img){ 
+					final_decision = second_img;
+				}
+				else{
+					final_decision = 3; //if can't agree then maybe blank
+				}
+
+			}
+			else{
+				final_decision = first_img;
+			}
+	
+			std::cout << "===>  tag: ";
+
+			tags[ind] = final_decision;
+
+			switch(final_decision){
+                case 0 : std::cout << "Raisin Bran" << std::endl;
+                break;
+
+                case 1 : std::cout << "Cinnamon Toast Crunch" << std::endl;
+                break;
+
+                case 2 : std::cout << "Rice Krispies" << std::endl;
+                break;
+
+                case 3 : std::cout << "Blank" << std::endl;
+                break;
+
+            }
+            std::cout << std::endl;
 
 			// Mark the box as visited
 			checked[ind] = 1;	
@@ -215,5 +282,16 @@ int main(int argc, char** argv) {
         ros::spinOnce();
         ros::Duration(0.01).sleep();
     }
+
+	// Assume the coordinates are in 2D vector: goal
+    // Assume the tags are in 1D vector: tags
+    std::ofstream output;
+    output.open("output.txt");
+    for (int i=0;i<5;i++){
+    	output << "At location ( " << goals[0][i+1] << ", " << goals[1][i+1] << " ),";
+    	output << " the tag " << tags[i] << "was found.\n";
+    }
+    output.close();
+
     return 0;
 }

@@ -2,7 +2,7 @@
 #include <string>
 
 #define IMAGE_TYPE sensor_msgs::image_encodings::BGR8
-#define IMAGE_TOPIC "camera/image" // kinect:"camera/rgb/image_raw" webcam:"camera/image"
+#define IMAGE_TOPIC "camera/rgb/image_raw" // kinect:"camera/rgb/image_raw" webcam:"camera/image"
 
 ImagePipeline::ImagePipeline(ros::NodeHandle& n) {
     image_transport::ImageTransport it(n);
@@ -16,6 +16,7 @@ void ImagePipeline::imageCallback(const sensor_msgs::ImageConstPtr& msg) {
             img.release();
         }
         img = (cv_bridge::toCvShare(msg, IMAGE_TYPE)->image).clone();
+
         isValid = true;
     } catch (cv_bridge::Exception& e) {
         std::cout << "ERROR: Could not convert from " << msg->encoding.c_str()
@@ -41,6 +42,8 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
         // std::cout << name << std::endl;
         //imwrite( name,  img );
 
+        cv::waitKey(1);
+
         // Blank images have some multiple matches greater than ~10
         double min_matches_blank = 10;
         
@@ -50,15 +53,30 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
         // Marks whether the box is blank or not
         bool marked = false;
 
-        // Records the best match
-        double best_matches = 50;
+        // Records the best match, also if all matches less than this value, then probably blank
+        double best_matches = 5;
+
 
         // For each box templates
         for (int i = 0; i < boxes.templates.size(); ++i)
         {
             // Match each box to the template
             double matches = matchToTemplate(boxes.templates[i]);
-            std::cout << "Template [" << i << "] matched:  " << matches << std::endl;
+
+            switch(i){
+                case 0 : std::cout << "Raisin Bran ";
+                break;
+
+                case 1 : std::cout << "Cinnamon Toast Crunch ";
+                break;
+
+                case 2 : std::cout << "Rice Krispies ";
+                break;
+
+            }
+            std::cout  << " matched:  " << matches << std::endl;
+            // std::cout << "img.rows:" << img.rows << std::endl;
+            // std::cout << "img.cols:" << img.cols << std::endl;
             
             // // Heuristics for classification 1
             // if (matches > min_matches_blank){
@@ -86,6 +104,9 @@ int ImagePipeline::getTemplateID(Boxes& boxes) {
         // std::cout << "attempt disp img" << std::endl;
         // cv::imshow("view", img);
         // cv::waitKey(1000);
+
+
+
     return template_id;
 }
 
@@ -108,9 +129,15 @@ double ImagePipeline::matchToTemplate(Mat img_object){
     std::vector<KeyPoint>keypoints_object,keypoints_scene;
     Mat descriptors_object, descriptors_scene;
 
+
+    //find features in a cropped image
+    cv::Rect myROI(0,130,630,340);
+
+    Mat cropped_img = img(myROI);
+
     detector->detectAndCompute(img_object, Mat(), keypoints_object, descriptors_object);
 
-    detector->detectAndCompute(img, Mat(), keypoints_scene, descriptors_scene);
+    detector->detectAndCompute(cropped_img, Mat(), keypoints_scene, descriptors_scene);    //cropped_img instead of just img
     //-- Step 3: Matching descriptor vectors using FLANN matcher
     FlannBasedMatcher matcher;
     std::vector< DMatch > matches;
@@ -194,7 +221,7 @@ double ImagePipeline::matchToTemplate(Mat img_object){
         if(indicator >= 0) best_matches.push_back( good_matches[i]);
     }
     
-    drawMatches( img_object, keypoints_object, img, keypoints_scene,
+    drawMatches( img_object, keypoints_object, cropped_img, keypoints_scene,
                  best_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
                  std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
 
