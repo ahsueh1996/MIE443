@@ -166,6 +166,11 @@ int main(int argc, char** argv) {
 	int third_img;
 	int final_decision;
 	int tags[5] = {0,0,0,0,0}; 
+
+	std::cout << "Open output file" << std::endl;
+    std::ofstream output;
+    output.open("/home/turtlebot/MIE443/output.txt");
+
     // Execute strategy.
     while(ros::ok()){
 		/***YOUR CODE HERE***/
@@ -232,23 +237,34 @@ int main(int argc, char** argv) {
 	
 			std::cout << "===>  tag: ";
 
-			tags[ind] = final_decision;
+			tags[ind-1] = final_decision;
+		
+			output << "Box: " << ind << std::endl;
+    		output << "At location (" << boxes.coords[ind-1][0] << ", " << boxes.coords[ind-1][1] << ", " << boxes.coords[ind-1][2] <<  ")" << std::endl;
+    		
 
 			switch(final_decision){
                 case 0 : std::cout << "Raisin Bran" << std::endl;
+                		 output << "Raisin Bran was found" << std::endl;
                 break;
 
                 case 1 : std::cout << "Cinnamon Toast Crunch" << std::endl;
+                		 output << "Cinnamon Toast Crunch was found" << std::endl;
                 break;
 
                 case 2 : std::cout << "Rice Krispies" << std::endl;
+                		 output << "Rice Krispies was found" << std::endl;
                 break;
 
                 case 3 : std::cout << "Blank" << std::endl;
+                		 output << "nothing was found" << std::endl;
                 break;
 
             }
+
             std::cout << std::endl;
+
+
 
 			// Mark the box as visited
 			checked[ind] = 1;	
@@ -262,7 +278,7 @@ int main(int argc, char** argv) {
 			if(nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0])) return 0;
 		}
 
-		// Probably don't have enough time to do this.
+		// // Probably don't have enough time to do this.
 		// if (i > 5){
 		// 	for (int j = 0; j < 5; ++j){
 		// 		ind = planner.plan[j];
@@ -284,14 +300,16 @@ int main(int argc, char** argv) {
     }
 
 	// Assume the coordinates are in 2D vector: goal
-    // Assume the tags are in 1D vector: tags
-    std::ofstream output;
-    output.open("output.txt");
-    for (int i=0;i<5;i++){
-    	output << "At location ( " << goals[0][i+1] << ", " << goals[1][i+1] << " ),";
-    	output << " the tag " << tags[i] << "was found.\n";
-    }
+ //    Assume the tags are in 1D vector: tags
+    
+  //   for (int i=0;i<5;i++){
+		// ind = planner.plan[i];
+		// output << "Box: " << ind << std::endl;
+  //   	output << "At location ( " << goals[0][ind+1] << ", " << goals[1][i+1] << " ),";
+  //   	output << " the tag " << tags[ind] << " was found.\n";
+  //   }
     output.close();
+    std::cout << "Wrote output file" << std::endl;
 
     return 0;
 }

@@ -1,6 +1,6 @@
 roslaunch turtlebot_bringup minimal.launch
 
-roslaunch mie443_contest2 amcl.launch map_file:=/home/turtlebot/MIE443/src/mie443_contest2/maps/physical/contest2_env.yaml
+roslaunch mie443_contest2 amcl_demo.launch map_file:=/home/turtlebot/MIE443/src/mie443_contest2/maps/physical/contest2_env.yaml 
 
 roslaunch turtlebot_rviz_launchers view_navigation.launch
 
