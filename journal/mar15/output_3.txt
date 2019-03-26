@@ -1,0 +1,15 @@
+Box: 1
+At location (2.19, 4.94, -1.58)
+Cinnamon Toast Crunch was found
+Box: 2
+At location (0.83, 3.24, 1.58)
+Cinnamon Toast Crunch was found
+Box: 5
+At location (0, 1.6, 1.17887)
+Raisin Bran was found
+Box: 4
+At location (0.3, 1.19, 0.78895)
+nothing was found
+Box: 3
+At location (2.91, 0.56, -3.75)
+Rice Krispies was found

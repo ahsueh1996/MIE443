@@ -264,50 +264,118 @@ int main(int argc, char** argv) {
 
             std::cout << std::endl;
 
-
-
 			// Mark the box as visited
 			checked[ind] = 1;	
 		}
 		else{
 			// If failed to visit this box, move onto the next box
+			output << "Can't get to Box: " << ind << std::endl;
+			std::cout << "Can't get to Box: " << ind << std::endl;
 			i += 1;
 		}
 		if (i > 4){
-			// Return back to the origianl pose and terminate
-			if(nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0])) return 0;
-		}
+			// Return back to the origianl pose
+			nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0]);
+			// If we missed some boxes... we go back to visit them now.
+			for (int j = 0; j < 5; ++j)
+			{
+				ind = planner.plan[j];
+				if (checked[ind] == 0)
+				{
+					if (nav.moveToGoal(goals[0][ind], goals[1][ind], goals[2][ind]))
+					{
+			        	ros::Duration(0.10).sleep();
+						ros::spinOnce();
 
-		// // Probably don't have enough time to do this.
-		// if (i > 5){
-		// 	for (int j = 0; j < 5; ++j){
-		// 		ind = planner.plan[j];
-		// 		if (checked[ind] == 0){
-		// 			checked[ind] = nav.moveToGoal(goals[0][ind], goals[1][ind], goals[2][ind]);
-		// 			ros::Duration(0.01).sleep();
-		// 			ros::spinOnce();
-	
-		// 			img = imagePipeline.getTemplateID(boxes);
-		// 			std::cout << "Image: " << img << std::endl;
-		// 		}
-		// 	}
-		// 	nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0]);
-		// 	return 0;
-		// }		
+						// Image recognition
+						std::cout << "Taking first picture" << std::endl << std::endl;
+						first_img = imagePipeline.getTemplateID(boxes);
+						std::cout << std::endl;
+						ros::Duration(0.10).sleep();
+						ros::spinOnce();
+						ros::Duration(0.60).sleep();
+						ros::spinOnce();
+
+						std::cout << "Taking second picture" << std::endl << std::endl;
+						second_img = imagePipeline.getTemplateID(boxes);
+						std::cout << std::endl;
+
+						if (first_img != second_img){
+							ros::Duration(0.10).sleep();
+							ros::spinOnce();
+							ros::Duration(0.60).sleep();
+							ros::spinOnce();
+
+
+							std::cout << "Taking third picture" << std::endl << std::endl;
+							third_img = imagePipeline.getTemplateID(boxes);
+							std::cout << std::endl;
+
+
+							if (third_img == first_img){ 
+								final_decision = first_img;
+							}
+							if (third_img == second_img){ 
+								final_decision = second_img;
+							}
+							else{
+								final_decision = 3; //if can't agree then maybe blank
+							}
+
+						}
+						else{
+							final_decision = first_img;
+						}
+				
+						std::cout << "===>  tag: ";
+
+						tags[ind-1] = final_decision;
+					
+						output << "Box: " << ind << std::endl;
+			    		output << "At location (" << boxes.coords[ind-1][0] << ", " << boxes.coords[ind-1][1] << ", " << boxes.coords[ind-1][2] <<  ")" << std::endl;
+			    		
+
+						switch(final_decision){
+			                case 0 : std::cout << "Raisin Bran" << std::endl;
+			                		 output << "Raisin Bran was found" << std::endl;
+			                break;
+
+			                case 1 : std::cout << "Cinnamon Toast Crunch" << std::endl;
+			                		 output << "Cinnamon Toast Crunch was found" << std::endl;
+			                break;
+
+			                case 2 : std::cout << "Rice Krispies" << std::endl;
+			                		 output << "Rice Krispies was found" << std::endl;
+			                break;
+
+			                case 3 : std::cout << "Blank" << std::endl;
+			                		 output << "nothing was found" << std::endl;
+			                break;
+
+			            }
+
+			            std::cout << std::endl;
+
+						// Mark the box as visited
+						checked[ind] = 1;	
+					}
+					else 
+					{
+						// If failed to visit this box, move onto the next box
+						output << "Again, can't get to Box: " << ind << std::endl;
+						std::cout << "Again, can't get to Box: " << ind << std::endl;
+					} // if get to unvisited goal
+				} // if goal unvisited
+			} // for loop goals
+			nav.moveToGoal(goals[0][0], goals[1][0], goals[2][0]);
+			break;		// ok we're done, break loop and close file
+		}		
         
         ros::spinOnce();
         ros::Duration(0.01).sleep();
     }
 
-	// Assume the coordinates are in 2D vector: goal
- //    Assume the tags are in 1D vector: tags
-    
-  //   for (int i=0;i<5;i++){
-		// ind = planner.plan[i];
-		// output << "Box: " << ind << std::endl;
-  //   	output << "At location ( " << goals[0][ind+1] << ", " << goals[1][i+1] << " ),";
-  //   	output << " the tag " << tags[ind] << " was found.\n";
-  //   }
+
     output.close();
     std::cout << "Wrote output file" << std::endl;
 
