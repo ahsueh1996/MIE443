@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 				break;
 			case RAGE:
 				if (free)
-					onEnter = NEUTRAl;
+					onEnter = NEUTRAL;
 					onExit = RAGE;
 				break;
 			case EXCITE:
