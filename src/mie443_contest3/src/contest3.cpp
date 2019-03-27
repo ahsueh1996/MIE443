@@ -1,6 +1,13 @@
 #include <header.h>
 #include <ros/package.h>
 #include <imageTransporter.hpp>
+#include <string>
+#include <fstream>
+
+inline bool exist_file (const std::string& name) {
+    ifstream f(name.c_str());
+    return f.good();
+}
 
 using namespace std;
 
@@ -36,7 +43,18 @@ int main(int argc, char **argv)
 	//imageTransporter rgbTransport("camera/rgb/image_raw", sensor_msgs::image_encodings::BGR8); //--for turtlebot Camera
 	imageTransporter depthTransport("camera/depth_registered/image_raw", sensor_msgs::image_encodings::TYPE_32FC1);
 
-	int world_state = 0;
+
+	int NONE = -1;
+	int NEUTRAL = 0;
+	int FEAR = 1;
+	int RAGE = 2;
+	int EXCITE = 3;
+	int RESENT= 4;
+
+
+	int state = NEUTRAL;
+	int onEnter = NONE;
+	int onExit = NONE;
 
 	double angular = 0.2;
 	double linear = 0.0;
@@ -49,23 +67,92 @@ int main(int argc, char **argv)
 	ros::Duration(0.5).sleep();
 
 	while(ros::ok()){
-		ros::spinOnce();
+		 ros::spinOnce();
 		//.....**E-STOP DO NOT TOUCH**.......
 		//eStop.block();
 		//...................................
 
-		if(world_state == 0){
-			//fill with your code
-			//vel_pub.publish(vel);
-			vel_pub.publish(follow_cmd);
+		switch(onExit) {
 
-		}else if(world_state == 1){
 			/*
-			...
-			...
-			*/
-		}
-	}
+			 * Insert code that get's executed one time upon entering a state
+			 */
+			case NEUTRAL:
+				break;
+			default:
+				break;
+		} // onEnter
+		onExit = -1;
+		switch (state) {
+			/*
+			 * Insert code that get's run every cycle spent in the state
+			 */
+			case NEUTRAL:
+				// ros::spinOnce(); Assume to be done perhaps, or not. either method is okay
+				gone = true if blah
+				bumped = true if blah or via callback
+				if (gone)
+					onEnter = FEAR;
+					onExit = NEUTRAL;
+				if (bumped)
+					bump_count += 1;
+				else
+					bump_count = 0;
+				if (bump_count > n)
+					onEnter = RAGE;
+					onExit = NEUTRAL;
+				if (picked_up)
+					onEnter = EXCITE;
+					onExit = NEUTRAL;
+				break;
+			case FEAR:
+				if (back)
+					onEnter = NEUTRAL;
+					onExit = FEAR;
+				break;
+			case RAGE:
+				if (free)
+					onEnter = NEUTRAl;
+					onExit = RAGE;
+				break;
+			case EXCITE:
+				if (bump_L)
+					onEnter = RESENT;
+					onExit = EXCITE;
+				break;
+			case RESENT:
+				// https://askubuntu.com/questions/37767/how-to-access-a-usb-flash-drive-from-the-terminal
+				bool sorry = exist_file("/dev/sdb1/mie443imsorry.txt")
+				if (sorry)
+					onEnter = NEUTRAL;
+					onExit = RESENT;
+				break;
+			default:
+				break;
+		}	// Normal cycle of state
+		switch (onEnter) {
+			/*
+			 * Insert code that gets executed once upon exiting a state
+			 */
+			case NEUTRAL:
+				state = NEUTRAL;
+				break;
+			case FEAR:
+				state = FEAR;
+				break;
+			case RAGE:
+				state = RAGE;
+				break;
+			case EXCITE:
+				state = EXCITE;
+				break;
+			case RESENT:
+				state = RESENT;
+				break;
+			default:
+				break;
+		}	// onEnter
+	}	// while loop
 
 	return 0;
 }
