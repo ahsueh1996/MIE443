@@ -4,12 +4,25 @@
 #include <string>
 #include <fstream>
 
+// added by mike
+#include <std_msgs/Bool.h>
+#include <kobuki_msgs/BumperEvent.h>
+
+using namespace std;
+
 inline bool exist_file (const std::string& name) {
     ifstream f(name.c_str());
     return f.good();
 }
 
-using namespace std;
+
+
+//bumper global variable
+bool bumper_left = false; 
+bool bumper_center = false;
+bool bumper_right = false;
+
+
 
 geometry_msgs::Twist follow_cmd;
 int world_state;
@@ -18,9 +31,31 @@ void followerCB(const geometry_msgs::Twist msg){
     follow_cmd = msg;
 }
 
-void bumperCB(const geometry_msgs::Twist msg){
-    //Fill with code
+void bumperCB(const kobuki_msgs::BumperEvent msg){
+    if(msg.bumper == 0){
+    	bumper_left = !bumper_left;
+    	cout << "left" << endl;
+    }
+    if(msg.bumper == 1){
+    	bumper_center = !bumper_center;
+    	cout << "center" << endl;
+    }
+    if(msg.bumper == 2){
+    	bumper_right = !bumper_right;
+    	cout << "right" << endl;
+    }
 }
+
+void personCB(const std_msgs::Bool msg){
+
+	if(msg.data == false){
+		cout << "no person found" << endl;
+	}
+	if(msg.data == true){
+		cout << "See a person !!!!!!!" <<endl;
+	}
+}
+
 
 //-------------------------------------------------------------
 
@@ -39,6 +74,12 @@ int main(int argc, char **argv)
 	ros::Subscriber follower = nh.subscribe("follower_velocity_smoother/smooth_cmd_vel", 10, &followerCB);
 	ros::Subscriber bumper = nh.subscribe("mobile_base/events/bumper", 10, &bumperCB);
 
+
+
+	ros::Subscriber person_detection = nh.subscribe("turtlebot_follower/detect_person",10, &personCB);
+
+
+
 	imageTransporter rgbTransport("camera/image/", sensor_msgs::image_encodings::BGR8); //--for Webcam
 	//imageTransporter rgbTransport("camera/rgb/image_raw", sensor_msgs::image_encodings::BGR8); //--for turtlebot Camera
 	imageTransporter depthTransport("camera/depth_registered/image_raw", sensor_msgs::image_encodings::TYPE_32FC1);
@@ -51,6 +92,7 @@ int main(int argc, char **argv)
 	int EXCITE = 3;
 	int RESENT= 4;
 
+	int bump_count = 0;
 
 	int state = NEUTRAL;
 	int onEnter = NONE;
@@ -72,86 +114,97 @@ int main(int argc, char **argv)
 		//eStop.block();
 		//...................................
 
-		switch(onExit) {
+		// switch(onExit) {
 
-			/*
-			 * Insert code that get's executed one time upon entering a state
-			 */
-			case NEUTRAL:
-				break;
-			default:
-				break;
-		} // onEnter
-		onExit = -1;
-		switch (state) {
-			/*
-			 * Insert code that get's run every cycle spent in the state
-			 */
-			case NEUTRAL:
-				// ros::spinOnce(); Assume to be done perhaps, or not. either method is okay
-				gone = true if blah
-				bumped = true if blah or via callback
-				if (gone)
-					onEnter = FEAR;
-					onExit = NEUTRAL;
-				if (bumped)
-					bump_count += 1;
-				else
-					bump_count = 0;
-				if (bump_count > n)
-					onEnter = RAGE;
-					onExit = NEUTRAL;
-				if (picked_up)
-					onEnter = EXCITE;
-					onExit = NEUTRAL;
-				break;
-			case FEAR:
-				if (back)
-					onEnter = NEUTRAL;
-					onExit = FEAR;
-				break;
-			case RAGE:
-				if (free)
-					onEnter = NEUTRAL;
-					onExit = RAGE;
-				break;
-			case EXCITE:
-				if (bump_L)
-					onEnter = RESENT;
-					onExit = EXCITE;
-				break;
-			case RESENT:
-				// https://askubuntu.com/questions/37767/how-to-access-a-usb-flash-drive-from-the-terminal
-				bool sorry = exist_file("/dev/sdb1/mie443imsorry.txt")
-				if (sorry)
-					onEnter = NEUTRAL;
-					onExit = RESENT;
-				break;
-			default:
-				break;
-		}	// Normal cycle of state
-		switch (onEnter) {
-			/*
-			 * Insert code that gets executed once upon exiting a state
-			 */
-			case NEUTRAL:
-				state = NEUTRAL;
-				break;
-			case FEAR:
-				state = FEAR;
-				break;
-			case RAGE:
-				state = RAGE;
-				break;
-			case EXCITE:
-				state = EXCITE;
-				break;
-			case RESENT:
-				state = RESENT;
-				break;
-			default:
-				break;
-		}	// onEnter
+		// 	/*
+		// 	 * Insert code that get's executed one time upon entering a state
+		// 	 */
+		// 	case NEUTRAL:
+		// 		break;
+		// 	default:
+		// 		break;
+		// } // onEnter
+		// onExit = -1;
+		// switch (state) {
+		// 	/*
+		// 	 * Insert code that get's run every cycle spent in the state
+		// 	 */
+		// 	case NEUTRAL:
+		// 		// ros::spinOnce(); Assume to be done perhaps, or not. either method is okay
+		// 		gone = true if blah
+		// 		bumped = true if blah or via callback
+		// 		if (gone)
+		// 			onEnter = FEAR;
+		// 			onExit = NEUTRAL;
+		// 		if (bumped) // add cliff sensor checking
+		// 			bump_count += 1;
+		// 		else
+		// 			bump_count = 0;
+		// 		if (bump_count > n)
+		// 			onEnter = RAGE;
+		// 			onExit = NEUTRAL;
+		// 		if (picked_up)
+		// 			onEnter = EXCITE;
+		// 			onExit = NEUTRAL;
+		// 		break;
+		// 	case FEAR:
+		// 		if (back)
+		// 			onEnter = NEUTRAL;
+		// 			onExit = FEAR;
+		// 		break;
+		// 	case RAGE:
+		// 		if (free)
+		// 			onEnter = NEUTRAL;
+		// 			onExit = RAGE;
+		// 		break;
+		// 	case EXCITE:
+		// 		if (bump_L)
+		// 			onEnter = RESENT;
+		// 			onExit = EXCITE;
+		// 		break;
+		// 	case RESENT:
+		// 		// https://askubuntu.com/questions/37767/how-to-access-a-usb-flash-drive-from-the-terminal
+		// 		bool sorry = exist_file("/dev/sdb1/mie443imsorry.txt")
+		// 		if (sorry)
+		// 			onEnter = NEUTRAL;
+		// 			onExit = RESENT;
+		// 		break;
+		// 	default:
+		// 		break;
+		// }	// Normal cycle of state
+		// switch (onEnter) {
+		// 	/*
+		// 	 * Insert code that gets executed once upon exiting a state
+		// 	 */
+		// 	case NEUTRAL:
+		// 		state = NEUTRAL;
+		// 		// show neutral image
+		// 		break;
+		// 	case FEAR:
+		// 		state = FEAR;
+		// 		// show fear picture
+		// 		// play fear sound
+		// 		break;
+		// 	case RAGE:
+		// 		state = RAGE;
+		// 		// show rage picture
+		// 		// play rage sound
+		// 		break;
+		// 	case EXCITE:
+		// 		state = EXCITE;
+		// 		// show excite picture
+		// 		// show excite sound
+		// 		break;
+		// 	case RESENT:
+		// 		state = RESENT;
+		// 		// show resent picture
+		// 		// play sound like "oh don't touch me like that"
+		// 		break;
+		// 	default:
+		// 		break;
+		// }	// onEnter
+
+
 	}	// while loop
 
 	return 0;

@@ -41,6 +41,10 @@
 #include <depth_image_proc/depth_traits.h>
 
 
+// added by mike
+#include <std_msgs/Bool.h>
+
+
 namespace turtlebot_follower
 {
 
@@ -108,6 +112,12 @@ private:
     private_nh.getParam("enabled", enabled_);
 
     cmdpub_ = private_nh.advertise<geometry_msgs::Twist> ("cmd_vel", 1);
+
+
+    // added by mike
+    persondetectpub_ = private_nh.advertise<std_msgs::Bool> ("detect_person",1);
+
+
     markerpub_ = private_nh.advertise<visualization_msgs::Marker>("marker",1);
     bboxpub_ = private_nh.advertise<visualization_msgs::Marker>("bbox",1);
     sub_= nh.subscribe<sensor_msgs::Image>("depth/image_rect", 1, &TurtlebotFollower::imagecb, this);
@@ -198,6 +208,12 @@ private:
         if (enabled_)
         {
           cmdpub_.publish(geometry_msgs::TwistPtr(new geometry_msgs::Twist()));
+
+          // added by mike
+          std_msgs::Bool cant_follow_person;
+          cant_follow_person.data = false;
+          persondetectpub_.publish(cant_follow_person);
+
         }
         return;
       }
@@ -211,6 +227,11 @@ private:
         cmd->linear.x = (z - goal_z_) * z_scale_;
         cmd->angular.z = -x * x_scale_;
         cmdpub_.publish(cmd);
+
+        // added by mike
+        std_msgs::Bool following_person;
+        following_person.data = true;
+        persondetectpub_.publish(following_person);
       }
     }
     else
@@ -221,6 +242,11 @@ private:
       if (enabled_)
       {
         cmdpub_.publish(geometry_msgs::TwistPtr(new geometry_msgs::Twist()));
+
+        // added by mike
+        std_msgs::Bool cant_follow_person;
+        cant_follow_person.data = false;
+        persondetectpub_.publish(cant_follow_person);
       }
     }
 
@@ -310,6 +336,9 @@ private:
 
   ros::Subscriber sub_;
   ros::Publisher cmdpub_;
+
+  ros::Publisher persondetectpub_;
+
   ros::Publisher markerpub_;
   ros::Publisher bboxpub_;
 };
