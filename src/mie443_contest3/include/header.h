@@ -10,8 +10,9 @@
 #include <vector>
 #include <stdio.h>
 #include <cmath>
+#include <iostream>
 
-#include <opencv2/core.hpp>
+#include <opencv2/core/core.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/xfeatures2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -27,5 +28,8 @@
 #include <eStop.h>
 
 #include <sound_play/sound_play.h>
+
+using namespace cv;
+using namespace cv::xfeatures2d;
 
 #endif
