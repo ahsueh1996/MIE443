@@ -46,7 +46,7 @@ void bumperCB(const kobuki_msgs::BumperEvent msg){
     }
 }
 
-void personCB(const std_msg::Bool msg){
+void personCB(const std_msgs::Bool msg){
 
 	if(msg.data == false){
 		cout << "no person found" << endl;
@@ -59,11 +59,12 @@ void personCB(const std_msg::Bool msg){
 }
 
 void pickedupCB(const kobuki_msgs::WheelDropEvent msg) {
-	if (msg.state == 0) {
+	if (msg.state == 1) {
 		cout << "picked up!!" << endl;
 		picked_up = true;
 	}
-	if (msg.state == 1) {
+	if (msg.state == 0) {
+		cout << "dropped" << endl;
 		picked_up = false;
 	}
 }
@@ -87,11 +88,7 @@ int main(int argc, char **argv)
 	ros::Subscriber bumper = nh.subscribe("mobile_base/events/bumper", 10, &bumperCB);
 	ros::Subscriber drop_sens = nh.subscribe("mobile_base/events/wheel_drop", 10, &pickedupCB);
 
-
-
 	ros::Subscriber person_detection = nh.subscribe("turtlebot_follower/detect_person",10, &personCB);
-
-
 
 	imageTransporter rgbTransport("camera/image/", sensor_msgs::image_encodings::BGR8); //--for Webcam
 	//imageTransporter rgbTransport("camera/rgb/image_raw", sensor_msgs::image_encodings::BGR8); //--for turtlebot Camera
@@ -123,6 +120,9 @@ int main(int argc, char **argv)
 
 	while(ros::ok()){
 		 ros::spinOnce();
+		 bool sorry = exist_file("/media/turtlebot/F857-6592/imsorry.txt");
+		 cout << "file: " << sorry << endl;
+		 ros::Duration(0.5).sleep();
 		//.....**E-STOP DO NOT TOUCH**.......
 		//eStop.block();
 		//...................................
