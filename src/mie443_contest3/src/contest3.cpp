@@ -7,6 +7,7 @@
 // added by mike
 #include <std_msgs/Bool.h>
 #include <kobuki_msgs/BumperEvent.h>
+#include <kobuki_msgs/WheelDropEvent.h>
 
 using namespace std;
 
@@ -15,14 +16,13 @@ inline bool exist_file (const std::string& name) {
     return f.good();
 }
 
-
-
 //bumper global variable
 bool bumper_left = false; 
 bool bumper_center = false;
 bool bumper_right = false;
 
 bool gone = false;
+bool picked_up = false;
 
 geometry_msgs::Twist follow_cmd;
 int world_state;
@@ -46,7 +46,7 @@ void bumperCB(const kobuki_msgs::BumperEvent msg){
     }
 }
 
-void personCB(const std_msgs::Bool msg){
+void personCB(const std_msg::Bool msg){
 
 	if(msg.data == false){
 		cout << "no person found" << endl;
@@ -55,6 +55,16 @@ void personCB(const std_msgs::Bool msg){
 	if(msg.data == true){
 		cout << "See a person !!!!!!!" <<endl;
 		gone = false;
+	}
+}
+
+void pickedupCB(const kobuki_msgs::WheelDropEvent msg) {
+	if (msg.state == 0) {
+		cout << "picked up!!" << endl;
+		picked_up = true;
+	}
+	if (msg.state == 1) {
+		picked_up = false;
 	}
 }
 
@@ -75,6 +85,7 @@ int main(int argc, char **argv)
 	//subscribers
 	ros::Subscriber follower = nh.subscribe("follower_velocity_smoother/smooth_cmd_vel", 10, &followerCB);
 	ros::Subscriber bumper = nh.subscribe("mobile_base/events/bumper", 10, &bumperCB);
+	ros::Subscriber drop_sens = nh.subscribe("mobile_base/events/wheel_drop", 10, &pickedupCB);
 
 
 
