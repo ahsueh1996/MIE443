@@ -22,7 +22,7 @@ bool bumper_left = false;
 bool bumper_center = false;
 bool bumper_right = false;
 
-
+bool gone = false;
 
 geometry_msgs::Twist follow_cmd;
 int world_state;
@@ -50,9 +50,11 @@ void personCB(const std_msgs::Bool msg){
 
 	if(msg.data == false){
 		cout << "no person found" << endl;
+		gone = true;
 	}
 	if(msg.data == true){
 		cout << "See a person !!!!!!!" <<endl;
+		gone = false;
 	}
 }
 
@@ -90,7 +92,7 @@ int main(int argc, char **argv)
 	int FEAR = 1;
 	int RAGE = 2;
 	int EXCITE = 3;
-	int RESENT= 4;
+	int DISGUST= 4;
 
 	int bump_count = 0;
 
@@ -136,7 +138,7 @@ int main(int argc, char **argv)
 		// 		if (gone)
 		// 			onEnter = FEAR;
 		// 			onExit = NEUTRAL;
-		// 		if (bumped) // add cliff sensor checking
+		// 		if (bumper_center || bumper_right || bumper_left) // add cliff sensor checking
 		// 			bump_count += 1;
 		// 		else
 		// 			bump_count = 0;
@@ -148,26 +150,26 @@ int main(int argc, char **argv)
 		// 			onExit = NEUTRAL;
 		// 		break;
 		// 	case FEAR:
-		// 		if (back)
+		// 		if (!gone)
 		// 			onEnter = NEUTRAL;
 		// 			onExit = FEAR;
 		// 		break;
 		// 	case RAGE:
-		// 		if (free)
+		// 		if (!bumper_center && !bumper_right && !bumper_left)
 		// 			onEnter = NEUTRAL;
 		// 			onExit = RAGE;
 		// 		break;
 		// 	case EXCITE:
-		// 		if (bump_L)
-		// 			onEnter = RESENT;
+		// 		if (bumper_left)
+		// 			onEnter = DISGUST;
 		// 			onExit = EXCITE;
 		// 		break;
-		// 	case RESENT:
+		// 	case DISGUST:
 		// 		// https://askubuntu.com/questions/37767/how-to-access-a-usb-flash-drive-from-the-terminal
 		// 		bool sorry = exist_file("/dev/sdb1/mie443imsorry.txt")
 		// 		if (sorry)
 		// 			onEnter = NEUTRAL;
-		// 			onExit = RESENT;
+		// 			onExit = DISGUST;
 		// 		break;
 		// 	default:
 		// 		break;
@@ -195,8 +197,8 @@ int main(int argc, char **argv)
 		// 		// show excite picture
 		// 		// show excite sound
 		// 		break;
-		// 	case RESENT:
-		// 		state = RESENT;
+		// 	case DISGUST:
+		// 		state = DISGUST;
 		// 		// show resent picture
 		// 		// play sound like "oh don't touch me like that"
 		// 		break;
