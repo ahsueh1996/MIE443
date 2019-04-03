@@ -63,10 +63,10 @@ public:
    */
   TurtlebotFollower() : min_y_(0.1), max_y_(0.5),
                         min_x_(-0.2), max_x_(0.2),
-                        max_z_(0.8), goal_z_(0.6),
-                        z_scale_(1.0), x_scale_(5.0)
+                        max_z_(1), goal_z_(0.8),
+                        z_scale_(0.5), x_scale_(5.0)
   {
-
+// mike changed z_scale_ from 1.0 to 0.8
   }
 
   ~TurtlebotFollower()
