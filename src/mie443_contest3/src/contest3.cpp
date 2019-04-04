@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 	const int FEAR = 1;
 	const int RAGE = 2;
 	const int EXCITE = 3;
-	const int DISGUST= 4;
+	const int RESENTMENT= 4;
 
 	int state = NEUTRAL;
 	int onEnter = NONE;
@@ -157,11 +157,13 @@ int main(int argc, char **argv)
 	namedWindow( "Display window", CV_WINDOW_NORMAL);
 	setWindowProperty("Display window", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 
-	Mat neutral_image = imread(path_to_images + "neutral.png", CV_LOAD_IMAGE_COLOR);
-	Mat fear_image = imread(path_to_images + "fear.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat neutral_image = imread(path_to_images + "neutral.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat fear_image = imread(path_to_images + "fear.png", CV_LOAD_IMAGE_COLOR);
 	Mat rage_image = imread(path_to_images + "rage.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat calm_down_image = imread(path_to_images + "calm_down.png", CV_LOAD_IMAGE_COLOR);
 	Mat excited_image = imread(path_to_images + "excited.jpg", CV_LOAD_IMAGE_COLOR);
-	Mat disgust_image = imread(path_to_images + "disgust.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat resentment_image = imread(path_to_images + "resentment.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat forgive_image = imread(path_to_images + "forgive.jpg", CV_LOAD_IMAGE_COLOR);
 
 	imshow("Display window",neutral_image);
 	waitKey(1);
@@ -285,9 +287,10 @@ int main(int argc, char **argv)
 					vel.linear.x = 0.0;
 					vel.angular.z = 0;
 					vel_pub.publish(vel);
-					//show transition picture of calming down?
 
-					ros::Duration(3).sleep(); //calm down for a few second
+					//show transition picture of calming down
+					imshow("Display window",calm_down_image);
+					waitKey(5000); //need to play around with this maybe
 
 
 					onEnter = NEUTRAL;
@@ -311,7 +314,7 @@ int main(int argc, char **argv)
 				}
 				else{
 					if (bumper_left){
-						onEnter = DISGUST;
+						onEnter = RESENTMENT;
 						onExit = EXCITE;
 					}
 				}
@@ -320,7 +323,7 @@ int main(int argc, char **argv)
 
 
 
-			case DISGUST:
+			case RESENTMENT:
 			{
 
 				//forward velocity thresholding
@@ -338,9 +341,12 @@ int main(int argc, char **argv)
 					
 					//show accepting apology picture
 					//play sound like "oh bro i forgive you"
+					imshow("Display window",forgive_image);
+					waitKey(5000); //need to play around with this maybe
+
 
 					onEnter = NEUTRAL;
-					onExit = DISGUST;
+					onExit = RESENTMENT;
 				}
 				break;
 			}
@@ -365,9 +371,13 @@ int main(int argc, char **argv)
 				onEnter = NONE;
 				gone_sum = 0;
 				cout << "Enter NEUTRAL ======" << endl;
+				
+				sc.playWave(path_to_sounds + "silent.wav");
+
+				// show neutral image
 				imshow("Display window",neutral_image);
 				waitKey(1);
-				// show neutral image
+				
 				break;
 			}
 			case FEAR:
@@ -385,11 +395,12 @@ int main(int argc, char **argv)
 				vel_pub.publish(vel);
 
 				
+				// show fear picture
 				imshow("Display window",fear_image);
 				waitKey(1);
 
 				cout << "Enter FEAR ======" << endl;
-				// show fear picture
+				
 
 				// play fear sound
 				break;
@@ -400,6 +411,10 @@ int main(int argc, char **argv)
 				onEnter = NONE;
 				bump_count = 0;
 				cout << "Enter RAGE ======" << endl;
+
+				sc.playWave(path_to_sounds + "rage.wav");
+
+				// show rage picture
 				imshow("Display window",rage_image);
 				waitKey(1);
 
@@ -412,7 +427,7 @@ int main(int argc, char **argv)
 				vel_pub.publish(vel);
 
 				
-				// show rage picture
+				
 				// play rage sound
 				break;
 			}
@@ -422,20 +437,23 @@ int main(int argc, char **argv)
 				onEnter = NONE;
 				bump_count = 0;	
 				cout << "Enter EXCITE ======" << endl;
+
+				sc.playWave(path_to_sounds + "excited.wav");
+
+				// show excite picture
 				imshow("Display window",excited_image);
 				waitKey(1);
-				// show excite picture
+				
 				// show excite sound
 				break;
 			}
-			case DISGUST:
+			case RESENTMENT:
 			{
-				state = DISGUST;
+				state = RESENTMENT;
 				onEnter = NONE;
-				cout << "Enter DISGUST ======" << endl;
-				imshow("Display window",disgust_image);
+				cout << "Enter RESENTMENT ======" << endl;
+				imshow("Display window",resentment_image);
 				waitKey(1);
-				// show resent picture
 				// play sound like "oh don't touch me like that"
 				break;
 			}
