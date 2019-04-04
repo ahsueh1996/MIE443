@@ -16,6 +16,8 @@ inline bool exist_file (const std::string& name) {
     return f.good();
 }
 
+const double PI = 3.14;
+
 //bumper global variable
 bool bumper_left = false; 
 bool bumper_center = false;
@@ -105,19 +107,41 @@ int main(int argc, char **argv)
 	const int EXCITE = 3;
 	const int DISGUST= 4;
 
-	int bump_count = 0;
-	const int bump_thresh = 2;
-
 	int state = NEUTRAL;
 	int onEnter = NONE;
 	int onExit = NONE;
 
+
+	int bump_count = 0;
+	const int BUMP_THRESH = 2;
+
+	
+	const double FOLLOW_FORWARD_LIMIT = 0.25;
+	const double FOLLOW_BACKWARD_LIMIT = 0.0;
+
+
+	int fear_spin_direction; //1 turn left , -1 turn right
+	double fear_begin_spin_time;
+	const double FEAR_SPIN_SPEED = 0.6;
+	const double FEAR_SPIN_ANGLE = 0.6;
+
+
+
+	double rage_begin_time;
+	const double RAGE_SPIN_SPEED = 2.0;
+	const double RAGE_SPIN_ANGLE = 2*PI;
+
+
+
+
 	double angular = 0.0;
 	double linear = 0.0;
-
 	geometry_msgs::Twist vel;
 	vel.angular.z = angular;
 	vel.linear.x = linear;
+
+
+
 
 	sc.playWave(path_to_sounds + "sound.wav");
 	ros::Duration(0.5).sleep();
@@ -134,8 +158,10 @@ int main(int argc, char **argv)
 
 	while(ros::ok()){
 		 ros::spinOnce();
-		 if ((bumper_center || bumper_right || bumper_left) && !picked_up){ 
-			 follow_cmd.linear.x = -0.3;
+
+		//immediately trigger bumper condition if hit something
+		if ((bumper_center || bumper_right || bumper_left) && !picked_up){ 
+			follow_cmd.linear.x = -0.3;
 			follow_cmd.angular.z = 0;
 			vel_pub.publish(follow_cmd);
 			ros::Duration(1).sleep();
@@ -144,6 +170,7 @@ int main(int argc, char **argv)
 			vel_pub.publish(follow_cmd);
 		}
 		 ros::Duration(0.1).sleep();
+
 		// //.....**E-STOP DO NOT TOUCH**.......
 		// //eStop.block();
 		// //...................................
@@ -165,6 +192,8 @@ int main(int argc, char **argv)
 				break;
 		} // onExit
 		onExit = -1;
+
+
 		switch (state) {
 			/*
 			 * Insert code that get's run every cycle spent in the state
@@ -185,23 +214,21 @@ int main(int argc, char **argv)
 				if ((bumper_center || bumper_right || bumper_left) && !picked_up){ 
 					bump_count = bump_count + 1;
 					cout << "bump count " << bump_count << endl;
-						if (bump_count > bump_thresh){
+						if (bump_count > BUMP_THRESH){
 							onEnter = RAGE;
 							onExit = NEUTRAL;
 						}
-						else{
-							//back up
-							
-						}
+					
 				}
 
-				if (picked_up)
+				if (picked_up){
 					onEnter = EXCITE;
 					onExit = NEUTRAL;
-					
+				}
+
 				double vel_x = follow_cmd.linear.x;
 
-				follow_cmd.linear.x = min(0.25,max(0.0,vel_x));
+				follow_cmd.linear.x = min(FOLLOW_FORWARD_LIMIT, max(FOLLOW_BACKWARD_LIMIT,vel_x));
 
 				vel_pub.publish(follow_cmd);
 
@@ -211,34 +238,47 @@ int main(int argc, char **argv)
 			case FEAR:
 			{
 
-				//turn back and forth looking for the person
-				follow_cmd.linear.x = 0;
-				follow_cmd.angular.z = 0.5;
-
-				vel_pub.publish(follow_cmd);
-
-				ros::Duration(1).sleep();
-
-				follow_cmd.angular.z = -0.5;
-
-				vel_pub.publish(follow_cmd);
-
-				ros::Duration(1).sleep();
-
 				if (!gone){
 					onEnter = NEUTRAL;
 					onExit = FEAR;
 				}
+
+				else{ //turn back and forth looking for the person
+					if (ros::Time::now().toSec() >= (fear_begin_spin_time + FEAR_SPIN_ANGLE/FEAR_SPIN_SPEED)){
+						fear_spin_direction = -1 * fear_spin_direction;
+						fear_begin_spin_time = ros::Time::now().toSec();
+
+						// not sure necessary
+						vel.linear.x = 0.0;
+						vel.angular.z = fear_spin_direction * FEAR_SPIN_SPEED;
+						vel_pub.publish(vel);
+					}
+					else{
+						vel.linear.x = 0.0;
+						vel.angular.z = fear_spin_direction * FEAR_SPIN_SPEED;
+						vel_pub.publish(vel);
+					}
+				}
+
+
 				break;
 			}
 
 
 			case RAGE:
 			{
-				if (!bumper_center && !bumper_right && !bumper_left)
+				if (ros::Time::now().toSec() >= (rage_begin_time + RAGE_SPIN_ANGLE/RAGE_SPIN_SPEED) )
 				{
+
+					//show transition picture of calming down?
+
 					onEnter = NEUTRAL;
 					onExit = RAGE;
+				}
+				else{ //not sure if necessary
+					vel.linear.x = 0.0;
+					vel.angular.z = RAGE_SPIN_SPEED;
+					vel_pub.publish(vel);
 				}
 				break;
 			}
@@ -265,7 +305,12 @@ int main(int argc, char **argv)
 			case DISGUST:
 			{
 
+				//forward velocity thresholding
+
+				double vel_x = follow_cmd.linear.x;
+				follow_cmd.linear.x = min(FOLLOW_FORWARD_LIMIT, vel_x);
 				vel_pub.publish(follow_cmd);
+
 
 				// https://askubuntu.com/questions/37767/how-to-access-a-usb-flash-drive-from-the-terminal
 				bool sorry = exist_file("/media/turtlebot/F857-6592/imsorry.txt");
@@ -310,6 +355,15 @@ int main(int argc, char **argv)
 				onEnter = NONE;
 				bump_count = 0;	
 				gone_sum = 0.0;
+
+				fear_spin_direction = 1;
+				fear_begin_spin_time = ros::Time::now().toSec();
+
+				vel.linear.x = 0.0;
+				vel.angular.z = fear_spin_direction * FEAR_SPIN_SPEED;
+				vel_pub.publish(vel);
+
+
 				cout << "Enter FEAR ======" << endl;
 				// show fear picture
 				// play fear sound
@@ -321,6 +375,16 @@ int main(int argc, char **argv)
 				onEnter = NONE;
 				bump_count = 0;
 				cout << "Enter RAGE ======" << endl;
+
+				//make robot spin in place when enraged
+				rage_begin_time = ros::Time::now().toSec();
+
+				vel.linear.x = 0.0;
+				vel.angular.z = RAGE_SPIN_SPEED;
+
+				vel_pub.publish(vel);
+
+				
 				// show rage picture
 				// play rage sound
 				break;
