@@ -83,6 +83,7 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh;
 	sound_play::SoundClient sc;
 	string path_to_sounds = ros::package::getPath("mie443_contest3") + "/sounds/";
+	string path_to_images = ros::package::getPath("mie443_contest3") + "/images/";
 	teleController eStop;
 
 	//publishers
@@ -123,13 +124,13 @@ int main(int argc, char **argv)
 	int fear_spin_direction; //1 turn left , -1 turn right
 	double fear_begin_spin_time;
 	const double FEAR_SPIN_SPEED = 0.6;
-	const double FEAR_SPIN_ANGLE = 0.6;
+	const double FEAR_SPIN_ANGLE = 1.2;
 
 
 
 	double rage_begin_time;
 	const double RAGE_SPIN_SPEED = 2.0;
-	const double RAGE_SPIN_ANGLE = 2*PI;
+	const double RAGE_SPIN_ANGLE = 2*PI + PI/2;
 
 
 
@@ -153,11 +154,21 @@ int main(int argc, char **argv)
 
 	//show neutral image
 
+	namedWindow( "Display window", CV_WINDOW_NORMAL);
+	setWindowProperty("Display window", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 
+	Mat neutral_image = imread(path_to_images + "neutral.png", CV_LOAD_IMAGE_COLOR);
+	Mat fear_image = imread(path_to_images + "fear.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat rage_image = imread(path_to_images + "rage.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat excited_image = imread(path_to_images + "excited.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat disgust_image = imread(path_to_images + "disgust.jpg", CV_LOAD_IMAGE_COLOR);
+
+	imshow("Display window",neutral_image);
+	waitKey(1);
 
 
 	while(ros::ok()){
-		 ros::spinOnce();
+		ros::spinOnce();
 
 		//immediately trigger bumper condition if hit something
 		if ((bumper_center || bumper_right || bumper_left) && !picked_up){ 
@@ -169,7 +180,8 @@ int main(int argc, char **argv)
 			follow_cmd.angular.z = 0;
 			vel_pub.publish(follow_cmd);
 		}
-		 ros::Duration(0.1).sleep();
+		
+		ros::Duration(0.1).sleep();
 
 		// //.....**E-STOP DO NOT TOUCH**.......
 		// //eStop.block();
@@ -203,7 +215,7 @@ int main(int argc, char **argv)
 				// ros::spinOnce(); Assumed to be done perhaps, or not. either method is okay
 				if (gone){
 					gone_sum += 1;
-					if (gone_sum > 5)
+					if (gone_sum > 21)
 					{
 						onEnter = FEAR;
 						onExit = NEUTRAL;	
@@ -270,7 +282,13 @@ int main(int argc, char **argv)
 				if (ros::Time::now().toSec() >= (rage_begin_time + RAGE_SPIN_ANGLE/RAGE_SPIN_SPEED) )
 				{
 
+					vel.linear.x = 0.0;
+					vel.angular.z = 0;
+					vel_pub.publish(vel);
 					//show transition picture of calming down?
+
+					ros::Duration(3).sleep(); //calm down for a few second
+
 
 					onEnter = NEUTRAL;
 					onExit = RAGE;
@@ -317,6 +335,7 @@ int main(int argc, char **argv)
 		 		cout << "Sorry?: " << sorry << endl;
 				if (sorry){
 
+					
 					//show accepting apology picture
 					//play sound like "oh bro i forgive you"
 
@@ -346,6 +365,8 @@ int main(int argc, char **argv)
 				onEnter = NONE;
 				gone_sum = 0;
 				cout << "Enter NEUTRAL ======" << endl;
+				imshow("Display window",neutral_image);
+				waitKey(1);
 				// show neutral image
 				break;
 			}
@@ -363,9 +384,13 @@ int main(int argc, char **argv)
 				vel.angular.z = fear_spin_direction * FEAR_SPIN_SPEED;
 				vel_pub.publish(vel);
 
+				
+				imshow("Display window",fear_image);
+				waitKey(1);
 
 				cout << "Enter FEAR ======" << endl;
 				// show fear picture
+
 				// play fear sound
 				break;
 			}
@@ -375,6 +400,8 @@ int main(int argc, char **argv)
 				onEnter = NONE;
 				bump_count = 0;
 				cout << "Enter RAGE ======" << endl;
+				imshow("Display window",rage_image);
+				waitKey(1);
 
 				//make robot spin in place when enraged
 				rage_begin_time = ros::Time::now().toSec();
@@ -395,6 +422,8 @@ int main(int argc, char **argv)
 				onEnter = NONE;
 				bump_count = 0;	
 				cout << "Enter EXCITE ======" << endl;
+				imshow("Display window",excited_image);
+				waitKey(1);
 				// show excite picture
 				// show excite sound
 				break;
@@ -404,6 +433,8 @@ int main(int argc, char **argv)
 				state = DISGUST;
 				onEnter = NONE;
 				cout << "Enter DISGUST ======" << endl;
+				imshow("Display window",disgust_image);
+				waitKey(1);
 				// show resent picture
 				// play sound like "oh don't touch me like that"
 				break;
