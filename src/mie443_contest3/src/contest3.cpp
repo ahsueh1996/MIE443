@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 
 	double rage_begin_time;
 	const double RAGE_SPIN_SPEED = 2.0;
-	const double RAGE_SPIN_ANGLE = 2*PI;
+	const double RAGE_SPIN_ANGLE = 2*PI + PI/2;
 
 
 
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 
 
 	while(ros::ok()){
-		 ros::spinOnce();
+		ros::spinOnce();
 
 		//immediately trigger bumper condition if hit something
 		if ((bumper_center || bumper_right || bumper_left) && !picked_up){ 
@@ -169,7 +169,8 @@ int main(int argc, char **argv)
 			follow_cmd.angular.z = 0;
 			vel_pub.publish(follow_cmd);
 		}
-		 ros::Duration(0.1).sleep();
+		
+		ros::Duration(0.1).sleep();
 
 		// //.....**E-STOP DO NOT TOUCH**.......
 		// //eStop.block();
@@ -203,7 +204,7 @@ int main(int argc, char **argv)
 				// ros::spinOnce(); Assumed to be done perhaps, or not. either method is okay
 				if (gone){
 					gone_sum += 1;
-					if (gone_sum > 5)
+					if (gone_sum > 25)
 					{
 						onEnter = FEAR;
 						onExit = NEUTRAL;	
@@ -270,7 +271,13 @@ int main(int argc, char **argv)
 				if (ros::Time::now().toSec() >= (rage_begin_time + RAGE_SPIN_ANGLE/RAGE_SPIN_SPEED) )
 				{
 
+					vel.linear.x = 0.0;
+					vel.angular.z = 0;
+					vel_pub.publish(vel);
 					//show transition picture of calming down?
+
+					ros::Duration(3).sleep(); //calm down for a few second
+
 
 					onEnter = NEUTRAL;
 					onExit = RAGE;
