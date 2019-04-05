@@ -290,7 +290,11 @@ int main(int argc, char **argv)
 
 					//show transition picture of calming down
 					imshow("Display window",calm_down_image);
-					waitKey(5000); //need to play around with this maybe
+					waitKey(1); 
+
+					ros::Duration(0.2).sleep();
+					sc.playWave(path_to_sounds + "calm_down.wav");
+					ros::Duration(0.8).sleep();
 
 
 					onEnter = NEUTRAL;
@@ -342,8 +346,11 @@ int main(int argc, char **argv)
 					//show accepting apology picture
 					//play sound like "oh bro i forgive you"
 					imshow("Display window",forgive_image);
-					waitKey(5000); //need to play around with this maybe
+					waitKey(1); 
 
+					ros::Duration(0.2).sleep();
+					sc.playWave(path_to_sounds + "apology.wav");
+					ros::Duration(0.6).sleep();
 
 					onEnter = NEUTRAL;
 					onExit = RESENTMENT;
@@ -401,6 +408,7 @@ int main(int argc, char **argv)
 
 				cout << "Enter FEAR ======" << endl;
 				
+				sc.playWave(path_to_sounds + "fear.wav");
 
 				// play fear sound
 				break;
@@ -444,7 +452,7 @@ int main(int argc, char **argv)
 				imshow("Display window",excited_image);
 				waitKey(1);
 				
-				// show excite sound
+				
 				break;
 			}
 			case RESENTMENT:
@@ -452,6 +460,9 @@ int main(int argc, char **argv)
 				state = RESENTMENT;
 				onEnter = NONE;
 				cout << "Enter RESENTMENT ======" << endl;
+
+				sc.playWave(path_to_sounds + "resentment.wav");
+
 				imshow("Display window",resentment_image);
 				waitKey(1);
 				// play sound like "oh don't touch me like that"
