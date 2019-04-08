@@ -105,8 +105,8 @@ int main(int argc, char **argv)
 	const int NEUTRAL = 0;
 	const int FEAR = 1;
 	const int RAGE = 2;
-	const int EXCITE = 3;
-	const int RESENTMENT= 4;
+	const int INFATUATION = 3;
+	const int DISGUST= 4;
 
 	int state = NEUTRAL;
 	int onEnter = NONE;
@@ -124,7 +124,8 @@ int main(int argc, char **argv)
 	int fear_spin_direction; //1 turn left , -1 turn right
 	double fear_begin_spin_time;
 	const double FEAR_SPIN_SPEED = 0.6;
-	const double FEAR_SPIN_ANGLE = 1.2;
+	const double FEAR_SPIN_ANGLE = 1.5;
+	const double FEAR_SHUTTER_SPEED = 0.03;
 
 
 
@@ -134,18 +135,16 @@ int main(int argc, char **argv)
 
 
 
+	bool dont_touch_me = false;
+	int dont_touch_me_counter = 0;
+
+
 
 	double angular = 0.0;
 	double linear = 0.0;
 	geometry_msgs::Twist vel;
 	vel.angular.z = angular;
 	vel.linear.x = linear;
-
-
-
-
-	sc.playWave(path_to_sounds + "sound.wav");
-	ros::Duration(0.5).sleep();
 
 
 
@@ -161,9 +160,9 @@ int main(int argc, char **argv)
 	Mat fear_image = imread(path_to_images + "fear.png", CV_LOAD_IMAGE_COLOR);
 	Mat rage_image = imread(path_to_images + "rage.jpg", CV_LOAD_IMAGE_COLOR);
 	Mat calm_down_image = imread(path_to_images + "calm_down.png", CV_LOAD_IMAGE_COLOR);
-	Mat excited_image = imread(path_to_images + "excited.jpg", CV_LOAD_IMAGE_COLOR);
-	Mat resentment_image = imread(path_to_images + "resentment.jpg", CV_LOAD_IMAGE_COLOR);
-	Mat forgive_image = imread(path_to_images + "forgive.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat infatuation_image = imread(path_to_images + "infatuation.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat disgust_image = imread(path_to_images + "disgust.jpg", CV_LOAD_IMAGE_COLOR);
+	Mat forgive_image = imread(path_to_images + "forgive.png", CV_LOAD_IMAGE_COLOR);
 
 	imshow("Display window",neutral_image);
 	waitKey(1);
@@ -183,7 +182,18 @@ int main(int argc, char **argv)
 			vel_pub.publish(follow_cmd);
 		}
 		
-		ros::Duration(0.1).sleep();
+		// ros::Duration(0.1).sleep();
+		int keystroke = cv::waitKey(100);
+		if (keystroke == 27)
+		{
+			follow_cmd.linear.x = 0.0;
+			follow_cmd.angular.z = -PI;
+			vel_pub.publish(follow_cmd);
+			ros::Duration(1).sleep();
+			follow_cmd.linear.x = 0;
+			follow_cmd.angular.z = 0;
+			vel_pub.publish(follow_cmd);	
+		}
 
 		// //.....**E-STOP DO NOT TOUCH**.......
 		// //eStop.block();
@@ -236,7 +246,7 @@ int main(int argc, char **argv)
 				}
 
 				if (picked_up){
-					onEnter = EXCITE;
+					onEnter = INFATUATION;
 					onExit = NEUTRAL;
 				}
 
@@ -265,13 +275,20 @@ int main(int argc, char **argv)
 						// not sure necessary
 						vel.linear.x = 0.0;
 						vel.angular.z = fear_spin_direction * FEAR_SPIN_SPEED;
-						vel_pub.publish(vel);
 					}
 					else{
 						vel.linear.x = 0.0;
 						vel.angular.z = fear_spin_direction * FEAR_SPIN_SPEED;
-						vel_pub.publish(vel);
 					}
+					// let the bot shudder
+					vel.linear.x = FEAR_SHUTTER_SPEED;
+					vel_pub.publish(vel);
+					ros::Duration(0.1).sleep();
+					vel.linear.x = -FEAR_SHUTTER_SPEED;
+					vel_pub.publish(vel);
+					ros::Duration(0.1).sleep();
+					vel.linear.x = 0.0;
+					vel_pub.publish(vel);
 				}
 
 
@@ -294,7 +311,7 @@ int main(int argc, char **argv)
 
 					ros::Duration(0.2).sleep();
 					sc.playWave(path_to_sounds + "calm_down.wav");
-					ros::Duration(0.8).sleep();
+					ros::Duration(5).sleep();
 
 
 					onEnter = NEUTRAL;
@@ -310,16 +327,16 @@ int main(int argc, char **argv)
 
 
 
-			case EXCITE:
+			case INFATUATION:
 			{
 				if (!picked_up){
 					onEnter = NEUTRAL;
-					onExit = EXCITE;
+					onExit = INFATUATION;
 				}
 				else{
 					if (bumper_left){
-						onEnter = RESENTMENT;
-						onExit = EXCITE;
+						onEnter = DISGUST;
+						onExit = INFATUATION;
 					}
 				}
 				break;
@@ -327,19 +344,25 @@ int main(int argc, char **argv)
 
 
 
-			case RESENTMENT:
+			case DISGUST:
 			{
 
 				//forward velocity thresholding
 
+			
 				double vel_x = follow_cmd.linear.x;
 				follow_cmd.linear.x = min(FOLLOW_FORWARD_LIMIT, vel_x);
 				vel_pub.publish(follow_cmd);
-
+				ros::Duration(0.1).sleep();
+				dont_touch_me_counter += 1;
+				if (!picked_up && dont_touch_me && dont_touch_me_counter > 25 && vel_x < 0.1){
+					sc.playWave(path_to_sounds + "dont_touch_me.wav"); //get the right file name
+					dont_touch_me = false;
+				}
 
 				// https://askubuntu.com/questions/37767/how-to-access-a-usb-flash-drive-from-the-terminal
 				bool sorry = exist_file("/media/turtlebot/F857-6592/imsorry.txt");
-		 		cout << "Sorry?: " << sorry << endl;
+		 		// cout << "Sorry?: " << sorry << endl;
 				if (sorry){
 
 					
@@ -350,10 +373,10 @@ int main(int argc, char **argv)
 
 					ros::Duration(0.2).sleep();
 					sc.playWave(path_to_sounds + "apology.wav");
-					ros::Duration(0.6).sleep();
+					ros::Duration(5).sleep();
 
 					onEnter = NEUTRAL;
-					onExit = RESENTMENT;
+					onExit = DISGUST;
 				}
 				break;
 			}
@@ -439,32 +462,36 @@ int main(int argc, char **argv)
 				// play rage sound
 				break;
 			}
-			case EXCITE:
+			case INFATUATION:
 			{
-				state = EXCITE;
+				state = INFATUATION;
 				onEnter = NONE;
 				bump_count = 0;	
-				cout << "Enter EXCITE ======" << endl;
+				cout << "Enter INFATUATION ======" << endl;
 
-				sc.playWave(path_to_sounds + "excited.wav");
+				sc.playWave(path_to_sounds + "infatuation.wav");
 
-				// show excite picture
-				imshow("Display window",excited_image);
+				// show INFATUATION picture
+				imshow("Display window",infatuation_image);
 				waitKey(1);
 				
 				
 				break;
 			}
-			case RESENTMENT:
+			case DISGUST:
 			{
-				state = RESENTMENT;
+				state = DISGUST;
 				onEnter = NONE;
-				cout << "Enter RESENTMENT ======" << endl;
+				cout << "Enter DISGUST ======" << endl;
 
 				sc.playWave(path_to_sounds + "resentment.wav");
+				ros::Duration(0.6).sleep();
 
-				imshow("Display window",resentment_image);
+				imshow("Display window",disgust_image);
 				waitKey(1);
+
+				dont_touch_me = true;
+				dont_touch_me_counter = 0;
 				// play sound like "oh don't touch me like that"
 				break;
 			}
